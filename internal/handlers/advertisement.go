@@ -8,21 +8,17 @@ import (
 	"strconv"
 	"time"
 
-	"ad-service-api/internal/config"
 	"ad-service-api/internal/models"
 	"ad-service-api/internal/repository"
 	"ad-service-api/utils"
 	"ad-service-api/validators"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/bson"
-	"golang.org/x/net/context"
 )
 
 var (
 	adRepo repository.AdvertisementRepository
-	ctx    = context.Background()
 )
 
 func init() {
@@ -35,45 +31,21 @@ func CreateAdvertisement(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	// Set the created at time
-	ad.CreatedAt = time.Now()
 	// Validate the advertisement fields
 	if err := validateAdvertisementRequest(ad); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	now := time.Now()
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	todayStr := today.Format("2006-01-02")
-	// Ensure daily ad creation limit isn't exceeded
-	dailyAdCount, err := config.RDB.Get(ctx, "dailyAdCount:"+todayStr).Int()
-	if err == redis.Nil {
-		// The result is not in Redis, get it from the database
-		dailyAdCount, _ = adRepo.CountAdsCreatedToday(today)
-		// Store the result in Redis for 1 hour
-		config.RDB.Set(ctx, "dailyAdCount:"+todayStr, dailyAdCount, time.Hour)
-	} else if err != nil {
-		// An error occurred while getting the result from Redis
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
-		return
-	}
+
+	dailyAdCount, _ := adRepo.CountAdsCreatedToday()
 	// Ensure daily ad creation limit isn't exceeded
 	if dailyAdCount >= 3000 {
+
 		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot create more ads today. Daily limit reached."})
 		return
 	}
 	// Ensure total active ads limit isn't exceeded
-	activeAdCount, err := config.RDB.Get(ctx, "activeAdCount").Int()
-	if err == redis.Nil {
-		// The result is not in Redis, get it from the database
-		activeAdCount, _ = adRepo.CountActiveAds()
-		// Store the result in Redis for 1 hour
-		config.RDB.Set(ctx, "activeAdCount", activeAdCount, time.Hour)
-	} else if err != nil {
-		// An error occurred while getting the result from Redis
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
-		return
-	}
+	activeAdCount, _ := adRepo.CountActiveAds()
 	// Ensure total active ads limit isn't exceeded
 	if activeAdCount >= 1000 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot create more ads. Active ads limit reached."})

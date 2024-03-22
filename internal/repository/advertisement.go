@@ -2,20 +2,21 @@ package repository
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log"
 	"time"
 
 	"ad-service-api/internal/config"
 	"ad-service-api/internal/models"
 
+	"github.com/go-redis/redis"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type AdvertisementRepository interface {
 	CreateAdvertisement(ad models.Advertisement) error
-	CountAdsCreatedToday(today time.Time) (int, error)
+	CountAdsCreatedToday() (int, error)
 	CountActiveAds() (int, error)
 	ListAdvertisements(filter bson.M, limit, offset int) ([]models.Advertisement, error)
 }
@@ -32,23 +33,32 @@ func (repo *advertisementRepository) CreateAdvertisement(ad models.Advertisement
 	defer cancel()
 
 	_, err := collection.InsertOne(ctx, ad)
-	return err
-}
-
-func (repo *advertisementRepository) CountAdsCreatedToday(today time.Time) (int, error) {
-	collection := config.DB.Collection("ads")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	filter := bson.M{"createdAt": bson.M{"$gte": today}}
-
-	count, err := collection.CountDocuments(ctx, filter)
-	fmt.Println(count)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	return int(count), nil
+	// Increment the Redis counter for today's ads
+	today := time.Now().Format("2006-01-02")
+	err = config.RDB.Incr(ctx, "ads:"+today).Err()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repo *advertisementRepository) CountAdsCreatedToday() (int, error) {
+	ctx := context.Background()
+	// Get the count from Redis
+	today := time.Now().Format("2006-01-02")
+	count, err := config.RDB.Get(ctx, "ads:"+today).Int()
+	if err == redis.Nil {
+		return 0, errors.New("key not found")
+	} else if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 func (repo *advertisementRepository) CountActiveAds() (int, error) {

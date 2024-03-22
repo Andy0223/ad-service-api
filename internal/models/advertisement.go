@@ -6,7 +6,6 @@ type Advertisement struct {
 	Title      string     `json:"title" bson:"title"`
 	StartAt    time.Time  `json:"startAt" bson:"startAt"`
 	EndAt      time.Time  `json:"endAt" bson:"endAt"`
-	CreatedAt  time.Time  `json:"createdAt" bson:"createdAt"`
 	Conditions Conditions `json:"conditions,omitempty" bson:"conditions,omitempty"`
 }
 
