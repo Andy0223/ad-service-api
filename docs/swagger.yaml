@@ -1,0 +1,75 @@
+definitions:
+  models.Advertisement:
+    properties:
+      conditions:
+        $ref: '#/definitions/models.Conditions'
+      endAt:
+        type: string
+      startAt:
+        type: string
+      title:
+        type: string
+    type: object
+  models.AgeRange:
+    properties:
+      ageEnd:
+        type: integer
+      ageStart:
+        type: integer
+    type: object
+  models.Conditions:
+    properties:
+      ageRange:
+        $ref: '#/definitions/models.AgeRange'
+      countries:
+        items:
+          type: string
+        type: array
+      genders:
+        items:
+          type: string
+        type: array
+      platforms:
+        items:
+          type: string
+        type: array
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/ad:
+    post:
+      consumes:
+      - application/json
+      description: Create new advertisement with the input payload
+      operationId: create-ad
+      parameters:
+      - description: Create ad
+        in: body
+        name: ad
+        required: true
+        schema:
+          $ref: '#/definitions/models.Advertisement'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Advertisement'
+      summary: Create new advertisement
+  /api/v1/ads:
+    get:
+      description: Get a list of all advertisements
+      operationId: get-ads
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Advertisement'
+            type: array
+      summary: List all advertisements
+swagger: "2.0"
