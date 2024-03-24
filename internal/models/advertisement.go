@@ -1,6 +1,11 @@
 package models
 
-import "time"
+import (
+	"context"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+)
 
 type Advertisement struct {
 	Title      string     `json:"title" bson:"title"`
@@ -19,4 +24,18 @@ type Conditions struct {
 type AgeRange struct {
 	AgeStart int `json:"ageStart" bson:"ageStart"`
 	AgeEnd   int `json:"ageEnd" bson:"ageEnd"`
+}
+
+type AdvertisementRepository interface {
+	CreateAdvertisement(ctx context.Context, ad *Advertisement) error
+	CountAdsCreatedToday(ctx context.Context, today string) (int, error)
+	CountActiveAds(ctx context.Context, now time.Time) (int, error)
+	ListAdvertisements(ctx context.Context, filter bson.M, limit, offset int) ([]*Advertisement, error)
+}
+
+type AdvertisementService interface {
+	CreateAdvertisement(ctx context.Context, ad *Advertisement) error
+	CountAdsCreatedToday(ctx context.Context, today string) (int, error)
+	CountActiveAds(ctx context.Context, now time.Time) (int, error)
+	ListAdvertisements(ctx context.Context, filter bson.M, limit, offset int) ([]*Advertisement, error)
 }
