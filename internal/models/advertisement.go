@@ -1,10 +1,7 @@
 package models
 
 import (
-	"context"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 type Advertisement struct {
@@ -26,16 +23,16 @@ type AgeRange struct {
 	AgeEnd   int `json:"ageEnd" bson:"ageEnd"`
 }
 
-type AdvertisementRepository interface {
-	CreateAdvertisement(ctx context.Context, ad *Advertisement) error
-	CountAdsCreatedToday(ctx context.Context, today string) (int, error)
-	CountActiveAds(ctx context.Context, now time.Time) (int, error)
-	ListAdvertisements(ctx context.Context, filter bson.M, limit, offset int) ([]*Advertisement, error)
-}
+// type AdvertisementRepository interface {
+// 	CreateAdvertisement(ctx context.Context, ad *Advertisement) error
+// 	CountAdsCreatedToday(ctx context.Context, today string) (int, error)
+// 	CountActiveAds(ctx context.Context, now time.Time) (int, error)
+// 	ListAdvertisements(ctx context.Context, filter bson.M, limit, offset int) ([]*Advertisement, error)
+// }
 
-type AdvertisementService interface {
-	CreateAdvertisement(ctx context.Context, ad *Advertisement) error
-	CountAdsCreatedToday(ctx context.Context, today string) (int, error)
-	CountActiveAds(ctx context.Context, now time.Time) (int, error)
-	ListAdvertisements(ctx context.Context, filter bson.M, limit, offset int) ([]*Advertisement, error)
-}
+// type AdvertisementService interface {
+// 	CreateAdvertisement(ctx context.Context, ad *Advertisement) error
+// 	CountAdsCreatedToday(ctx context.Context, today string) (int, error)
+// 	CountActiveAds(ctx context.Context, now time.Time) (int, error)
+// 	ListAdvertisements(ctx context.Context, filter bson.M, limit, offset int) ([]*Advertisement, error)
+// }
