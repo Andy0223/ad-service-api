@@ -8,26 +8,26 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type MongodbAdRepository interface {
-	Store(ctx context.Context, ad *models.Advertisement) error
-	GetActiveAdCounts(ctx context.Context, now time.Time) (int, error)
-	Fetch(ctx context.Context, filter primitive.M, limit, offset int) ([]*models.Advertisement, error)
-}
+// type MongodbAdRepository interface {
+// 	Store(ctx context.Context, ad *models.Advertisement) error
+// 	GetActiveAdCounts(ctx context.Context, now time.Time) (int, error)
+// 	Fetch(ctx context.Context, filter primitive.M, limit, offset int) ([]*models.Advertisement, error)
+// }
 
-type RedisAdRepository interface {
-	IncrAdCountsByDate(ctx context.Context, key string) error
-	GetAdCountsByDate(ctx context.Context, key string) (int, error)
-}
+// type RedisAdRepository interface {
+// 	IncrAdCountsByDate(ctx context.Context, key string) error
+// 	GetAdCountsByDate(ctx context.Context, key string) (int, error)
+// }
 
 type AdvertisementService struct {
-	adRepo    MongodbAdRepository
-	redisRepo RedisAdRepository
+	adRepo    models.MongodbAdRepository
+	redisRepo models.RedisAdRepository
 }
 
-func NewAdvertisementService(adRepo MongodbAdRepository, redisRepo RedisAdRepository) *AdvertisementService {
+func NewAdvertisementService(mongodbAdRepo models.MongodbAdRepository, redisAdRepo models.RedisAdRepository) *AdvertisementService {
 	return &AdvertisementService{
-		adRepo:    adRepo,
-		redisRepo: redisRepo,
+		adRepo:    mongodbAdRepo,
+		redisRepo: redisAdRepo,
 	}
 }
 

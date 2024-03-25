@@ -1,7 +1,10 @@
 package models
 
 import (
+	"context"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Advertisement struct {
@@ -23,16 +26,13 @@ type AgeRange struct {
 	AgeEnd   int `json:"ageEnd" bson:"ageEnd"`
 }
 
-// type AdvertisementRepository interface {
-// 	CreateAdvertisement(ctx context.Context, ad *Advertisement) error
-// 	CountAdsCreatedToday(ctx context.Context, today string) (int, error)
-// 	CountActiveAds(ctx context.Context, now time.Time) (int, error)
-// 	ListAdvertisements(ctx context.Context, filter bson.M, limit, offset int) ([]*Advertisement, error)
-// }
+type MongodbAdRepository interface {
+	Store(ctx context.Context, ad *Advertisement) error
+	GetActiveAdCounts(ctx context.Context, now time.Time) (int, error)
+	Fetch(ctx context.Context, filter primitive.M, limit, offset int) ([]*Advertisement, error)
+}
 
-// type AdvertisementService interface {
-// 	CreateAdvertisement(ctx context.Context, ad *Advertisement) error
-// 	CountAdsCreatedToday(ctx context.Context, today string) (int, error)
-// 	CountActiveAds(ctx context.Context, now time.Time) (int, error)
-// 	ListAdvertisements(ctx context.Context, filter bson.M, limit, offset int) ([]*Advertisement, error)
-// }
+type RedisAdRepository interface {
+	IncrAdCountsByDate(ctx context.Context, key string) error
+	GetAdCountsByDate(ctx context.Context, key string) (int, error)
+}
