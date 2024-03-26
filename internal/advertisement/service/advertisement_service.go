@@ -1,6 +1,8 @@
 package service
 
 import (
+	"ad-service-api/internal/advertisement/repository/mongodb"
+	"ad-service-api/internal/advertisement/repository/redis"
 	"ad-service-api/internal/models"
 	"context"
 	"time"
@@ -8,39 +10,36 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// type MongodbAdRepository interface {
-// 	Store(ctx context.Context, ad *models.Advertisement) error
-// 	GetActiveAdCounts(ctx context.Context, now time.Time) (int, error)
-// 	Fetch(ctx context.Context, filter primitive.M, limit, offset int) ([]*models.Advertisement, error)
-// }
-
-// type RedisAdRepository interface {
-// 	IncrAdCountsByDate(ctx context.Context, key string) error
-// 	GetAdCountsByDate(ctx context.Context, key string) (int, error)
-// }
-
-type AdvertisementService struct {
-	adRepo    models.MongodbAdRepository
-	redisRepo models.RedisAdRepository
+type Advertisement interface {
+	Create(ctx context.Context, ad *models.Advertisement) error
+	CountActive(ctx context.Context, now time.Time) (int, error)
+	Fetch(ctx context.Context, filter primitive.M, limit, offset int) ([]*models.Advertisement, error)
+	IncrByDate(ctx context.Context, key string) error
+	GetByDate(ctx context.Context, key string) (int, error)
 }
 
-func NewAdvertisementService(mongodbAdRepo models.MongodbAdRepository, redisAdRepo models.RedisAdRepository) *AdvertisementService {
+type AdvertisementService struct {
+	adRepo      mongodb.AdvertisementRepository
+	adCountRepo redis.AdCountRepository
+}
+
+func NewAdvertisementService(adRepo mongodb.AdvertisementRepository, adCountRepo redis.AdCountRepository) *AdvertisementService {
 	return &AdvertisementService{
-		adRepo:    mongodbAdRepo,
-		redisRepo: redisAdRepo,
+		adRepo:      adRepo,
+		adCountRepo: adCountRepo,
 	}
 }
 
-func (as *AdvertisementService) Store(ctx context.Context, ad *models.Advertisement) error {
-	err := as.adRepo.Store(ctx, ad)
+func (as *AdvertisementService) Create(ctx context.Context, ad *models.Advertisement) error {
+	err := as.adRepo.Create(ctx, ad)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (as *AdvertisementService) GetActiveAdCounts(ctx context.Context, now time.Time) (int, error) {
-	count, err := as.adRepo.GetActiveAdCounts(ctx, now)
+func (as *AdvertisementService) CountActive(ctx context.Context, now time.Time) (int, error) {
+	count, err := as.adRepo.CountActive(ctx, now)
 	if err != nil {
 		return 0, err
 	}
@@ -55,16 +54,16 @@ func (as *AdvertisementService) Fetch(ctx context.Context, filter primitive.M, l
 	return ads, nil
 }
 
-func (as *AdvertisementService) GetAdCountsByDate(ctx context.Context, today string) (int, error) {
-	count, err := as.redisRepo.GetAdCountsByDate(ctx, today)
+func (as *AdvertisementService) GetByDate(ctx context.Context, today string) (int, error) {
+	count, err := as.adCountRepo.GetByDate(ctx, today)
 	if err != nil {
 		return 0, err
 	}
 	return count, nil
 }
 
-func (as *AdvertisementService) IncrAdCountsByDate(ctx context.Context, key string) error {
-	err := as.redisRepo.IncrAdCountsByDate(ctx, key)
+func (as *AdvertisementService) IncrByDate(ctx context.Context, key string) error {
+	err := as.adCountRepo.IncrByDate(ctx, key)
 	if err != nil {
 		return err
 	}

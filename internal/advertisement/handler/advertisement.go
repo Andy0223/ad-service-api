@@ -1,40 +1,28 @@
 package handler
 
 import (
+	"ad-service-api/internal/advertisement/service"
 	"ad-service-api/internal/models"
 	"ad-service-api/internal/validators"
 	"ad-service-api/utils"
-	"context"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ResponseError struct {
 	Message string `json:"message"`
 }
 
-type AdvertisementService interface {
-	Store(ctx context.Context, ad *models.Advertisement) error
-	GetActiveAdCounts(ctx context.Context, now time.Time) (int, error)
-	Fetch(ctx context.Context, filter primitive.M, limit, offset int) ([]*models.Advertisement, error)
-	IncrAdCountsByDate(ctx context.Context, key string) error
-	GetAdCountsByDate(ctx context.Context, key string) (int, error)
-}
-
 type AdvertisementHandler struct {
-	AdvertisementService AdvertisementService
+	AdvertisementService *service.AdvertisementService
 }
 
-func NewAdvertisementHandler(e *gin.Engine, adService AdvertisementService) *AdvertisementHandler {
+func NewAdvertisementHandler(adService *service.AdvertisementService) *AdvertisementHandler {
 	handler := &AdvertisementHandler{
 		AdvertisementService: adService,
 	}
-
-	e.POST("/api/v1/ad", handler.CreateAdHandler)
-	e.GET("/api/v1/ads", handler.ListAdHandler)
 
 	return handler
 }
@@ -62,26 +50,26 @@ func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 		return
 	}
 
-	dailyAdCount, _ := h.AdvertisementService.GetAdCountsByDate(c, today)
+	dailyAdCount, _ := h.AdvertisementService.GetByDate(c, today)
 	// Ensure daily ad creation limit isn't exceeded
 	if dailyAdCount >= 3000 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot create more ads today. Daily limit reached."})
 		return
 	}
 	// Ensure total active ads limit isn't exceeded
-	activeAdCount, _ := h.AdvertisementService.GetActiveAdCounts(c, now)
+	activeAdCount, _ := h.AdvertisementService.CountActive(c, now)
 	// Ensure total active ads limit isn't exceeded
 	if activeAdCount >= 1000 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot create more ads. Active ads limit reached."})
 		return
 	}
 	// Ad passes all checks; proceed to add
-	if err := h.AdvertisementService.Store(c, &ad); err != nil {
+	if err := h.AdvertisementService.Create(c, &ad); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create advertisement"})
 		return
 	}
 	// Increment the Redis counter for today's ads
-	if err := h.AdvertisementService.IncrAdCountsByDate(c, "ads:"+today); err != nil {
+	if err := h.AdvertisementService.IncrByDate(c, "ads:"+today); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to increment ad count"})
 		return
 	}
