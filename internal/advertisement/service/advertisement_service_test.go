@@ -3,54 +3,96 @@ package service_test
 import (
 	"ad-service-api/internal/advertisement/service"
 	"ad-service-api/internal/models"
+	"ad-service-api/mocks"
 	"context"
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"ad-service-api/internal/mock"
 )
 
-func TestAdvertisementService(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+func TestAdvertisementService_Create(t *testing.T) {
+	mockAdRepo := new(mocks.MockAdvertisementRepository)
+	mockAdCountRepo := new(mocks.MockAdCountRepository)
 
-	mockAdRepo := mock.NewMockAdvertisementRepository(ctrl)
-	mockAdCountRepo := mock.NewMockAdCountRepository(ctrl)
-	adService := service.NewAdvertisementService(mockAdRepo, mockAdCountRepo)
-	ctx := context.Background()
-
-	// Test Create method
 	ad := &models.Advertisement{}
-	mockAdRepo.EXPECT().Create(ctx, ad).Return(nil)
-	err := adService.Create(ctx, ad)
-	assert.NoError(t, err)
+	ctx := context.TODO()
 
-	// Test CountActive method
+	mockAdRepo.On("Create", ctx, ad).Return(nil)
+
+	s := service.NewAdvertisementService(mockAdRepo, mockAdCountRepo)
+	err := s.Create(ctx, ad)
+
+	assert.NoError(t, err)
+	mockAdRepo.AssertExpectations(t)
+}
+
+func TestAdvertisementService_CountActive(t *testing.T) {
+	mockAdRepo := new(mocks.MockAdvertisementRepository)
+	mockAdCountRepo := new(mocks.MockAdCountRepository)
+
 	now := time.Now()
-	mockAdRepo.EXPECT().CountActive(ctx, now).Return(1, nil)
-	count, err := adService.CountActive(ctx, now)
+	ctx := context.TODO()
+
+	mockAdRepo.On("CountActive", ctx, now).Return(1, nil)
+
+	s := service.NewAdvertisementService(mockAdRepo, mockAdCountRepo)
+	count, err := s.CountActive(ctx, now)
+
 	assert.NoError(t, err)
 	assert.Equal(t, 1, count)
+	mockAdRepo.AssertExpectations(t)
+}
 
-	// Test Fetch method
+func TestAdvertisementService_Fetch(t *testing.T) {
+	mockAdRepo := new(mocks.MockAdvertisementRepository)
+	mockAdCountRepo := new(mocks.MockAdCountRepository)
+
 	filter := primitive.M{}
-	mockAdRepo.EXPECT().Fetch(ctx, filter, 10, 0).Return([]*models.Advertisement{}, nil)
-	ads, err := adService.Fetch(ctx, filter, 10, 0)
-	assert.NoError(t, err)
-	assert.Equal(t, []*models.Advertisement{}, ads)
+	limit := 10
+	offset := 0
+	ctx := context.TODO()
 
-	// Test IncrByDate and GetByDate methods
-	key := "2022-01-01"
-	mockAdCountRepo.EXPECT().IncrByDate(ctx, key).Return(nil)
-	err = adService.IncrByDate(ctx, key)
-	assert.NoError(t, err)
+	mockAdRepo.On("Fetch", ctx, filter, limit, offset).Return([]*models.Advertisement{}, nil)
 
-	mockAdCountRepo.EXPECT().GetByDate(ctx, key).Return(1, nil)
-	count, err = adService.GetByDate(ctx, key)
+	s := service.NewAdvertisementService(mockAdRepo, mockAdCountRepo)
+	ads, err := s.Fetch(ctx, filter, limit, offset)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, ads)
+	mockAdRepo.AssertExpectations(t)
+}
+
+func TestAdvertisementService_GetByDate(t *testing.T) {
+	mockAdRepo := new(mocks.MockAdvertisementRepository)
+	mockAdCountRepo := new(mocks.MockAdCountRepository)
+
+	today := "2022-01-01"
+	ctx := context.TODO()
+
+	mockAdCountRepo.On("GetByDate", ctx, today).Return(1, nil)
+
+	s := service.NewAdvertisementService(mockAdRepo, mockAdCountRepo)
+	count, err := s.GetByDate(ctx, today)
+
 	assert.NoError(t, err)
 	assert.Equal(t, 1, count)
+	mockAdCountRepo.AssertExpectations(t)
+}
+
+func TestAdvertisementService_IncrByDate(t *testing.T) {
+	mockAdRepo := new(mocks.MockAdvertisementRepository)
+	mockAdCountRepo := new(mocks.MockAdCountRepository)
+
+	key := "2022-01-01"
+	ctx := context.TODO()
+
+	mockAdCountRepo.On("IncrByDate", ctx, key).Return(nil)
+
+	s := service.NewAdvertisementService(mockAdRepo, mockAdCountRepo)
+	err := s.IncrByDate(ctx, key)
+
+	assert.NoError(t, err)
+	mockAdCountRepo.AssertExpectations(t)
 }

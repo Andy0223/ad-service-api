@@ -1,11 +1,11 @@
 package router
 
 import (
+	"ad-service-api/database"
 	"ad-service-api/internal/advertisement/handler"
-	"ad-service-api/internal/advertisement/repository/mongodb"
-	"ad-service-api/internal/advertisement/repository/redis"
+	"ad-service-api/internal/advertisement/repository"
 	"ad-service-api/internal/advertisement/service"
-	"ad-service-api/internal/config"
+	"ad-service-api/redis"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -14,12 +14,11 @@ import (
 
 // NewRouter creates a new router
 func NewRouter() *gin.Engine {
-	db, _ := config.ConnectMongoDB("mongodb://localhost:27017", "2024DcardBackend")
-	collection := db.Collection("ads")
-	rdb, _ := config.ConnectRedis("localhost:6379", "", 0)
+	col, _ := database.ConnectMongoDB("mongodb://localhost:27017", "2024DcardBackend", "ads")
+	rdb, _ := redis.ConnectRedis("localhost:6379", "", 0)
 
-	adRepo := mongodb.NewAdvertisementRepository(collection)
-	adCountRepo := redis.NewAdCountRepository(rdb)
+	adRepo := repository.NewAdvertisementRepository(col)
+	adCountRepo := repository.NewAdCountRepository(rdb)
 	adService := service.NewAdvertisementService(adRepo, adCountRepo)
 	adHandler := handler.NewAdvertisementHandler(adService)
 

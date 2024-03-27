@@ -1,8 +1,7 @@
 package service
 
 import (
-	"ad-service-api/internal/advertisement/repository/mongodb"
-	"ad-service-api/internal/advertisement/repository/redis"
+	"ad-service-api/internal/advertisement/repository"
 	"ad-service-api/internal/models"
 	"context"
 	"time"
@@ -10,20 +9,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type Advertisement interface {
+type IAdvertisementService interface {
 	Create(ctx context.Context, ad *models.Advertisement) error
 	CountActive(ctx context.Context, now time.Time) (int, error)
 	Fetch(ctx context.Context, filter primitive.M, limit, offset int) ([]*models.Advertisement, error)
+	GetByDate(ctx context.Context, today string) (int, error)
 	IncrByDate(ctx context.Context, key string) error
-	GetByDate(ctx context.Context, key string) (int, error)
 }
 
 type AdvertisementService struct {
-	adRepo      mongodb.AdvertisementRepository
-	adCountRepo redis.AdCountRepository
+	adRepo      repository.IAdvertisementRepository
+	adCountRepo repository.IAdCountRepository
 }
 
-func NewAdvertisementService(adRepo mongodb.AdvertisementRepository, adCountRepo redis.AdCountRepository) *AdvertisementService {
+func NewAdvertisementService(adRepo repository.IAdvertisementRepository, adCountRepo repository.IAdCountRepository) IAdvertisementService {
 	return &AdvertisementService{
 		adRepo:      adRepo,
 		adCountRepo: adCountRepo,
