@@ -7,6 +7,13 @@ services:
       - "8080:8080"
     volumes:
       - .:/app
+    environment:
+      - MONGO_URI=mongodb://db:27017
+      - MONGO_DB=2024DcardBackend
+      - MONGO_COLLECTION=ads
+      - REDIS_HOST=redis:6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=0
     depends_on:
       - db
       - redis

@@ -1,6 +1,8 @@
 package router
 
 import (
+	"os"
+
 	"ad-service-api/database"
 	"ad-service-api/internal/advertisement/handler"
 	"ad-service-api/internal/advertisement/repository"
@@ -14,8 +16,14 @@ import (
 
 // NewRouter creates a new router
 func NewRouter() *gin.Engine {
-	col, _ := database.ConnectMongoDB("mongodb://localhost:27017", "2024DcardBackend", "ads")
-	rdb, _ := redis.ConnectRedis("localhost:6379", "", 0)
+	mongoUri := os.Getenv("MONGO_URI")
+	mongoDb := os.Getenv("MONGO_DB")
+	mongoCollection := os.Getenv("MONGO_COLLECTION")
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	redisDb := 0
+	col, _ := database.ConnectMongoDB(mongoUri, mongoDb, mongoCollection)
+	rdb, _ := redis.ConnectRedis(redisHost, redisPassword, redisDb)
 
 	adRepo := repository.NewAdvertisementRepository(col)
 	adCountRepo := repository.NewAdCountRepository(rdb)
