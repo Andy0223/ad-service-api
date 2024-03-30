@@ -1,83 +1,89 @@
 package repository_test
 
-// import (
-// 	"ad-service-api/internal/advertisement/repository"
-// 	"ad-service-api/internal/models"
-// 	"context"
-// 	"testing"
+import (
+	"context"
+	"fmt"
+	"testing"
+	"time"
 
-// 	"github.com/stretchr/testify/mock"
-// 	"go.mongodb.org/mongo-driver/mongo"
-// 	"go.mongodb.org/mongo-driver/mongo/options"
-// )
+	"ad-service-api/internal/advertisement/repository"
+	"ad-service-api/internal/models"
 
-// // CollectionAPI is an interface that includes the methods you need to mock.
-// type CollectionAPI interface {
-// 	InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error)
-// 	Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error)
-// 	CountDocuments(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error)
-// }
+	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
+)
 
-// // Collection is a wrapper around *mongo.Collection that implements CollectionAPI.
-// type Collection struct {
-// 	collection *mongo.Collection
-// }
+func TestAdvertisementRepository_Create(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 
-// func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
-// 	return c.collection.InsertOne(ctx, document, opts...)
-// }
+	mt.Run("Create", func(mt *mtest.T) {
+		// Set up the mock responses
+		mt.AddMockResponses(mtest.CreateSuccessResponse())
+		mt.AddMockResponses(mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{{Key: "n", Value: int32(1)}}))
 
-// func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error) {
-// 	return c.collection.Find(ctx, filter, opts...)
-// }
+		repo := repository.NewAdvertisementRepository(mt.Coll)
+		ctx := context.Background()
+		ad := &models.Advertisement{
+			Title: "Test Ad",
+			// Populate the Advertisement struct
+		}
 
-// func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error) {
-// 	return c.collection.CountDocuments(ctx, filter, opts...)
-// }
+		err := repo.Create(ctx, ad)
+		assert.Nil(t, err)
 
-// // MockCollection is a mock implementation of CollectionAPI.
-// type MockCollection struct {
-// 	mock.Mock
-// }
+		count, err := mt.Coll.CountDocuments(ctx, bson.M{})
+		fmt.Println(count)
+		assert.Nil(t, err)
+		assert.Equal(t, int64(1), count, "expected document count to increase after insert")
+	})
+}
 
-// func (m *MockCollection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
-// 	args := m.Called(ctx, document)
-// 	return args.Get(0).(*mongo.InsertOneResult), args.Error(1)
-// }
+func TestAdvertisementRepository_CountActive(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 
-// func (m *MockCollection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error) {
-// 	args := m.Called(ctx, filter)
-// 	return args.Get(0).(*mongo.Cursor), args.Error(1)
-// }
+	now := time.Now()
 
-// // Now you can use MockCollection in your tests.
-// func TestAdvertisementRepository(t *testing.T) {
-// 	mockCollection := new(MockCollection)
-// 	adRepo := repository.NewAdvertisementRepository(mockCollection)
+	mt.Run("CountActive", func(mt *mtest.T) {
+		// Set up the mock responses
+		mt.AddMockResponses(mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{{Key: "n", Value: int32(1)}}))
 
-// 	ctx := context.Background()
-// 	ad := &models.Advertisement{Title: "Test Ad"}
+		repo := repository.NewAdvertisementRepository(mt.Coll)
+		ctx := context.Background()
 
-// 	// Test Create
-// 	mockCollection.On("InsertOne", ctx, ad).Return(&mongo.InsertOneResult{}, nil)
-// 	err := adRepo.Create(ctx, ad)
-// 	if err != nil {
-// 		t.Errorf("Error should be nil: %v", err)
-// 	}
+		// Insert sample advertisements
+		mt.Coll.InsertOne(ctx, bson.M{"startAt": now.Add(-time.Hour), "endAt": now.Add(time.Hour)}) // Should be counted as active
 
-// 	// Test CountActive
-// 	mockCollection.On("CountDocuments", ctx, mock.Anything).Return(int64(1), nil)
-// 	count, err := adRepo.CountActive(ctx, mock.Anything)
-// 	if err != nil {
-// 		t.Errorf("Error should be nil: %v", err)
-// 	}
+		// Add another mock response for the CountDocuments operation
+		mt.AddMockResponses(mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{{Key: "n", Value: int32(1)}}))
 
-// 	// Test Fetch
-// 	mockCollection.On("Find", ctx, mock.Anything).Return(&mongo.Cursor{}, nil)
-// 	_, err = adRepo.Fetch(ctx, mock.Anything, 10, 0)
-// 	if err != nil {
-// 		t.Errorf("Error should be nil: %v", err)
-// 	}
+		count, err := repo.CountActive(ctx, now)
+		fmt.Println(count)
+		assert.Nil(t, err)
+		assert.Equal(t, 1, count, "expected count of active advertisements to be correct")
+	})
+}
 
-// 	mockCollection.AssertExpectations(t)
-// }
+func TestAdvertisementRepository_Fetch(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+
+	mt.Run("Fetch", func(mt *mtest.T) {
+		repo := repository.NewAdvertisementRepository(mt.Coll)
+		ctx := context.Background()
+
+		// Insert sample advertisements
+		mt.Coll.InsertOne(ctx, bson.M{"title": "Ad 1"})
+		mt.Coll.InsertOne(ctx, bson.M{"title": "Ad 2"})
+
+		// Set up the mock responses
+		mt.AddMockResponses(mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{{Key: "_id", Value: primitive.NewObjectID()}, {Key: "title", Value: "Ad 1"}}))
+		mt.AddMockResponses(mtest.CreateCursorResponse(1, "foo.bar", mtest.NextBatch, bson.D{{Key: "_id", Value: primitive.NewObjectID()}, {Key: "title", Value: "Ad 2"}}))
+		mt.AddMockResponses(mtest.CreateCursorResponse(1, "foo.bar", mtest.NextBatch))
+
+		ads, err := repo.Fetch(ctx, bson.M{}, 10, 0)
+		fmt.Println(ads)
+		assert.Nil(t, err)
+		assert.Len(t, ads, 2, "expected number of advertisements to match")
+	})
+}
