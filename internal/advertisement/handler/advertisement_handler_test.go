@@ -47,7 +47,7 @@ func (suite *AdvertisementHandlerSuite) TestAdvertisementHandler_CreateAdHandler
 
 	suite.mockAdService.On("GetByDate", mock.Anything, now.Format("2006-01-02")).Return(1, nil)
 	suite.mockAdService.On("CountActive", mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("time.Time")).Return(1, nil)
-	suite.mockAdService.On("Create", mock.Anything, ad).Return(nil)
+	suite.mockAdService.On("Create", mock.Anything, mock.AnythingOfType("*models.Advertisement")).Return(nil)
 	suite.mockAdService.On("IncrByDate", mock.Anything, "ads:"+now.Format("2006-01-02")).Return(nil)
 
 	// Create a response recorder
