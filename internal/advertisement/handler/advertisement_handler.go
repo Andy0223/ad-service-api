@@ -35,23 +35,31 @@ func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 	now := time.Now()
 	today := now.Format("2006-01-02")
 	if err := c.ShouldBindJSON(&ad); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format: " + err.Error()})
 		return
 	}
 	// Validate the advertisement fields
 	if err := validators.CreateAdValueValidation(ad); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid advertisement data: " + err.Error()})
 		return
 	}
 
-	dailyAdCount, _ := h.AdvertisementService.GetByDate(c, today)
+	dailyAdCount, err := h.AdvertisementService.GetByDate(c, today)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get daily ad count: " + err.Error()})
+		return
+	}
 	// Ensure daily ad creation limit isn't exceeded
 	if dailyAdCount >= 3000 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot create more ads today. Daily limit reached."})
 		return
 	}
 	// Ensure total active ads limit isn't exceeded
-	activeAdCount, _ := h.AdvertisementService.CountActive(c, now)
+	activeAdCount, err := h.AdvertisementService.CountActive(c, now)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get active ad count: " + err.Error()})
+		return
+	}
 	// Ensure total active ads limit isn't exceeded
 	if activeAdCount >= 1000 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot create more ads. Active ads limit reached."})
@@ -59,12 +67,12 @@ func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 	}
 	// Ad passes all checks; proceed to add
 	if err := h.AdvertisementService.Create(c, &ad); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create advertisement"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create advertisement: " + err.Error()})
 		return
 	}
 	// Increment the Redis counter for today's ads
 	if err := h.AdvertisementService.IncrByDate(c, "ads:"+today); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to increment ad count"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to increment ad count: " + err.Error()})
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"message": "Advertisement created successfully"})
@@ -80,15 +88,20 @@ func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 func (h *AdvertisementHandler) ListAdHandler(c *gin.Context) {
 	filter, err := validators.ListAdParamsValidation(c.Request.URL.Query())
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid query parameters"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid query parameters: " + err.Error()})
 		return
 	}
 
-	limit, offset := utils.GetPaginationParams(c)
+	limit, offset, err := utils.GetPaginationParams(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid pagination parameters: " + err.Error()})
+		return
+	}
+
 	// List filtered advertisements
 	filteredAds, err := h.AdvertisementService.Fetch(c, filter, limit, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list advertisements"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list advertisements: " + err.Error()})
 		return
 	}
 
