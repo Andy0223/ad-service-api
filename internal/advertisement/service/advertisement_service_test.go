@@ -1,98 +1,94 @@
 package service_test
 
 import (
-	"ad-service-api/internal/advertisement/service"
-	"ad-service-api/internal/models"
-	"ad-service-api/mocks"
 	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"ad-service-api/internal/advertisement/service"
+	"ad-service-api/internal/models"
+	"ad-service-api/mocks"
 )
 
-func TestAdvertisementService_Create(t *testing.T) {
-	mockAdRepo := new(mocks.MockAdvertisementRepository)
-	mockAdCountRepo := new(mocks.MockAdCountRepository)
+type AdvertisementServiceSuite struct {
+	suite.Suite
+	mockAdRepo      *mocks.MockAdvertisementRepository
+	mockAdCountRepo *mocks.MockAdCountRepository
+	s               service.IAdvertisementService
+	ctx             context.Context
+}
 
+func (suite *AdvertisementServiceSuite) SetupTest() {
+	suite.mockAdRepo = new(mocks.MockAdvertisementRepository)
+	suite.mockAdCountRepo = new(mocks.MockAdCountRepository)
+	suite.s = service.NewAdvertisementService(suite.mockAdRepo, suite.mockAdCountRepo)
+	suite.ctx = context.TODO()
+}
+
+func (suite *AdvertisementServiceSuite) TestAdvertisementService_Create() {
 	ad := &models.Advertisement{}
-	ctx := context.TODO()
 
-	mockAdRepo.On("Create", ctx, ad).Return(nil)
+	suite.mockAdRepo.On("Create", suite.ctx, ad).Return(nil)
 
-	s := service.NewAdvertisementService(mockAdRepo, mockAdCountRepo)
-	err := s.Create(ctx, ad)
+	err := suite.s.Create(suite.ctx, ad)
 
-	assert.NoError(t, err)
-	mockAdRepo.AssertExpectations(t)
+	assert.NoError(suite.T(), err)
+	suite.mockAdRepo.AssertExpectations(suite.T())
 }
 
-func TestAdvertisementService_CountActive(t *testing.T) {
-	mockAdRepo := new(mocks.MockAdvertisementRepository)
-	mockAdCountRepo := new(mocks.MockAdCountRepository)
-
+func (suite *AdvertisementServiceSuite) TestAdvertisementService_CountActive() {
 	now := time.Now()
-	ctx := context.TODO()
 
-	mockAdRepo.On("CountActive", ctx, now).Return(1, nil)
+	suite.mockAdRepo.On("CountActive", suite.ctx, now).Return(1, nil)
 
-	s := service.NewAdvertisementService(mockAdRepo, mockAdCountRepo)
-	count, err := s.CountActive(ctx, now)
+	count, err := suite.s.CountActive(suite.ctx, now)
 
-	assert.NoError(t, err)
-	assert.Equal(t, 1, count)
-	mockAdRepo.AssertExpectations(t)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), 1, count)
+	suite.mockAdRepo.AssertExpectations(suite.T())
 }
 
-func TestAdvertisementService_Fetch(t *testing.T) {
-	mockAdRepo := new(mocks.MockAdvertisementRepository)
-	mockAdCountRepo := new(mocks.MockAdCountRepository)
-
+func (suite *AdvertisementServiceSuite) TestAdvertisementService_Fetch() {
 	filter := primitive.M{}
 	limit := 10
 	offset := 0
-	ctx := context.TODO()
 
-	mockAdRepo.On("Fetch", ctx, filter, limit, offset).Return([]*models.Advertisement{}, nil)
+	suite.mockAdRepo.On("Fetch", suite.ctx, filter, limit, offset).Return([]*models.Advertisement{}, nil)
 
-	s := service.NewAdvertisementService(mockAdRepo, mockAdCountRepo)
-	ads, err := s.Fetch(ctx, filter, limit, offset)
+	ads, err := suite.s.Fetch(suite.ctx, filter, limit, offset)
 
-	assert.NoError(t, err)
-	assert.NotNil(t, ads)
-	mockAdRepo.AssertExpectations(t)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), ads)
+	suite.mockAdRepo.AssertExpectations(suite.T())
 }
 
-func TestAdvertisementService_GetByDate(t *testing.T) {
-	mockAdRepo := new(mocks.MockAdvertisementRepository)
-	mockAdCountRepo := new(mocks.MockAdCountRepository)
-
+func (suite *AdvertisementServiceSuite) TestAdvertisementService_GetByDate() {
 	today := "2022-01-01"
-	ctx := context.TODO()
 
-	mockAdCountRepo.On("GetByDate", ctx, today).Return(1, nil)
+	suite.mockAdCountRepo.On("GetByDate", suite.ctx, today).Return(1, nil)
 
-	s := service.NewAdvertisementService(mockAdRepo, mockAdCountRepo)
-	count, err := s.GetByDate(ctx, today)
+	count, err := suite.s.GetByDate(suite.ctx, today)
 
-	assert.NoError(t, err)
-	assert.Equal(t, 1, count)
-	mockAdCountRepo.AssertExpectations(t)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), 1, count)
+	suite.mockAdCountRepo.AssertExpectations(suite.T())
 }
 
-func TestAdvertisementService_IncrByDate(t *testing.T) {
-	mockAdRepo := new(mocks.MockAdvertisementRepository)
-	mockAdCountRepo := new(mocks.MockAdCountRepository)
-
+func (suite *AdvertisementServiceSuite) TestAdvertisementService_IncrByDate() {
 	key := "2022-01-01"
-	ctx := context.TODO()
 
-	mockAdCountRepo.On("IncrByDate", ctx, key).Return(nil)
+	suite.mockAdCountRepo.On("IncrByDate", suite.ctx, key).Return(nil)
 
-	s := service.NewAdvertisementService(mockAdRepo, mockAdCountRepo)
-	err := s.IncrByDate(ctx, key)
+	err := suite.s.IncrByDate(suite.ctx, key)
 
-	assert.NoError(t, err)
-	mockAdCountRepo.AssertExpectations(t)
+	assert.NoError(suite.T(), err)
+	suite.mockAdCountRepo.AssertExpectations(suite.T())
+}
+
+func TestAdvertisementServiceSuite(t *testing.T) {
+	suite.Run(t, new(AdvertisementServiceSuite))
 }
