@@ -35,10 +35,8 @@ func (suite *AdvertisementHandlerSuite) TestAdvertisementHandler_CreateAdHandler
 		StartAt: now,
 		EndAt:   now.Add(24 * time.Hour), // Ends after 24 hours
 		Conditions: models.Conditions{
-			AgeRange: models.AgeRange{
-				AgeStart: 18,
-				AgeEnd:   24,
-			},
+			AgeStart:  18,
+			AgeEnd:    24,
 			Genders:   []string{"M", "F"},
 			Countries: []string{"US", "JP"},
 			Platforms: []string{"ios", "web"},

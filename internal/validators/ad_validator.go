@@ -70,7 +70,7 @@ func CreateAdValueValidation(ad models.Advertisement) error {
 	}
 
 	// Validate age range
-	if err := ValidateAgeRange(ad.Conditions.AgeRange.AgeStart, ad.Conditions.AgeRange.AgeEnd); err != nil {
+	if err := ValidateAgeRange(ad.Conditions.AgeStart, ad.Conditions.AgeEnd); err != nil {
 		return err
 	}
 

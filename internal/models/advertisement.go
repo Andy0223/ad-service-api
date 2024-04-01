@@ -12,13 +12,9 @@ type Advertisement struct {
 }
 
 type Conditions struct {
-	AgeRange  AgeRange `json:"ageRange,omitempty" bson:"ageRange,omitempty"`
+	AgeStart  int      `json:"ageStart,omitempty" bson:"ageStart,omitempty"`
+	AgeEnd    int      `json:"ageEnd,omitempty" bson:"ageEnd,omitempty"`
 	Genders   []string `json:"genders,omitempty" bson:"genders,omitempty"`
 	Countries []string `json:"countries,omitempty" bson:"countries,omitempty"`
 	Platforms []string `json:"platforms,omitempty" bson:"platforms,omitempty"`
-}
-
-type AgeRange struct {
-	AgeStart int `json:"ageStart" bson:"ageStart"`
-	AgeEnd   int `json:"ageEnd" bson:"ageEnd"`
 }
