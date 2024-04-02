@@ -6,7 +6,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - MONGO_URI=mongodb+srv://db:27017
+      - MONGO_URI=mongodb://db:27017
       - MONGO_DB=2024DcardBackend
       - MONGO_COLLECTION=ads
       - REDIS_HOST=redis:6379
