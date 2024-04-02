@@ -2,7 +2,6 @@ version: '3'
 
 services:
   app:
-    image: tty09183/ad-service-api:latest
     build: .
     ports:
       - "8080:8080"
