@@ -84,7 +84,7 @@ func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Advertisement created successfully", "ad": ad})
+	c.JSON(http.StatusCreated, gin.H{"message": "Advertisement created successfully"})
 }
 
 // ListAdHandler lists all advertisements
