@@ -47,4 +47,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/ad-service-api:latest
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/ad-service-api:${{ github.run_number }}
