@@ -35,18 +35,19 @@ func (suite *AdvertisementHandlerSuite) TestAdvertisementHandler_CreateAdHandler
 		StartAt: now,
 		EndAt:   now.Add(24 * time.Hour), // Ends after 24 hours
 		Conditions: models.Conditions{
-			AgeStart:  18,
-			AgeEnd:    24,
-			Genders:   []string{"M", "F"},
-			Countries: []string{"US", "JP"},
-			Platforms: []string{"ios", "web"},
+			AgeStart: 18,
+			AgeEnd:   24,
+			Gender:   []string{"M", "F"},
+			Country:  []string{"US", "JP"},
+			Platform: []string{"ios", "web"},
 		},
 	}
 
 	suite.mockAdService.On("GetByDate", mock.Anything, now.Format("2006-01-02")).Return(1, nil)
 	suite.mockAdService.On("CountActive", mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("time.Time")).Return(1, nil)
 	suite.mockAdService.On("Create", mock.Anything, mock.AnythingOfType("*models.Advertisement")).Return(nil)
-	suite.mockAdService.On("IncrByDate", mock.Anything, "ads:"+now.Format("2006-01-02")).Return(nil)
+	suite.mockAdService.On("IncrByDate", mock.Anything, now.Format("2006-01-02")).Return(nil)
+	suite.mockAdService.On("DeleteAdsByPattern", mock.Anything, mock.Anything).Return(nil)
 
 	// Create a response recorder
 	w := httptest.NewRecorder()
@@ -76,6 +77,12 @@ func (suite *AdvertisementHandlerSuite) TestAdvertisementHandler_ListAdHandler()
 
 	// Set the call expectation for the mock method, return specific test data
 	suite.mockAdService.On("Fetch", mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("primitive.M"), expectedLimit, expectedOffset).Return(expectedAds, nil)
+
+	// Mock GetAdsByKey to return nil, indicating cache miss
+	suite.mockAdService.On("GetAdsByKey", mock.Anything, mock.Anything).Return(nil, nil)
+
+	// Mock SetAdsByKey to cache the result
+	suite.mockAdService.On("SetAdsByKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	// Create response recorder and gin context
 	w := httptest.NewRecorder()
