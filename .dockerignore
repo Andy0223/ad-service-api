@@ -1,0 +1,17 @@
+# Ignore Git and GitHub files
+.git/
+.github/
+
+# Ignore Helm files
+helm/
+
+# Ignore Go test files
+*_test.go
+
+# Ignore Docker files
+Dockerfile
+docker-compose.yml
+
+# Ignore miscellaneous files
+README.md
+.gitignore
