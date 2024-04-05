@@ -61,7 +61,7 @@ func TestAdCountRepository_SetAdsByKey(t *testing.T) {
 	}
 	adsJson, _ := json.Marshal(ads)
 
-	mock.ExpectSet("testKey", adsJson, 0)
+	mock.ExpectSet("testKey", adsJson, 0).SetVal("OK")
 
 	err := repo.SetAdsByKey(context.Background(), "testKey", ads, 0)
 	assert.NoError(t, err)
