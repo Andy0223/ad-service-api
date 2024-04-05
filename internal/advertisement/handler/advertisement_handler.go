@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -47,25 +46,9 @@ func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 		return
 	}
 
-	var dailyAdCount, activeAdCount int
-	var err1, err2 error
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		dailyAdCount, err1 = h.AdvertisementService.GetByDate(c, today)
-	}()
-
-	go func() {
-		defer wg.Done()
-		activeAdCount, err2 = h.AdvertisementService.CountActive(c, now)
-	}()
-
-	wg.Wait()
-
-	if err1 != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get daily ad count: " + err1.Error()})
+	dailyAdCount, err := h.AdvertisementService.GetByDate(c, today)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get daily ad count: " + err.Error()})
 		return
 	}
 	// Ensure daily ad creation limit isn't exceeded
@@ -73,8 +56,10 @@ func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot create more ads today. Daily limit reached."})
 		return
 	}
-	if err2 != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get active ad count: " + err2.Error()})
+	// Ensure total active ads limit isn't exceeded
+	activeAdCount, err := h.AdvertisementService.CountActive(c, now)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get active ad count: " + err.Error()})
 		return
 	}
 	// Ensure total active ads limit isn't exceeded
