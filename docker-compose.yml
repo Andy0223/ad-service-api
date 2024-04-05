@@ -8,7 +8,7 @@ services:
     environment:
       - MONGO_USERNAME=root
       - MONGO_PASSWORD=root
-      - MONGO_HOST=db
+      - MONGO_HOST=db:27017
       - MONGO_DB=2024DcardBackend
       - MONGO_COLLECTION=ads
       - REDIS_HOST=redis:6379
@@ -21,6 +21,9 @@ services:
     image: mongo
     ports:
       - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
   redis:
     image: redis
     ports:
