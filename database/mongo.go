@@ -16,7 +16,8 @@ func ConnectMongoDB(username string, password string, host string, dbname string
 	defer cancel()
 
 	// Create a connection string with the username and password
-	connectionString := fmt.Sprintf("mongodb://%s:%s@%s/%s", username, password, host, dbname)
+	connectionString := fmt.Sprintf("mongodb://%s:%s@%s", username, password, host)
+	fmt.Println(connectionString)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(connectionString))
 	if err != nil {
 		log.Fatal(err)
