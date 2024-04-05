@@ -64,6 +64,24 @@ func (_m *MockAdvertisementService) Create(ctx context.Context, ad *models.Adver
 	return r0
 }
 
+// DeleteAdsByPattern provides a mock function with given fields: ctx, pattern
+func (_m *MockAdvertisementService) DeleteAdsByPattern(ctx context.Context, pattern string) error {
+	ret := _m.Called(ctx, pattern)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteAdsByPattern")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, pattern)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Fetch provides a mock function with given fields: ctx, filter, limit, offset
 func (_m *MockAdvertisementService) Fetch(ctx context.Context, filter primitive.M, limit int, offset int) ([]*models.Advertisement, error) {
 	ret := _m.Called(ctx, filter, limit, offset)
@@ -87,6 +105,36 @@ func (_m *MockAdvertisementService) Fetch(ctx context.Context, filter primitive.
 
 	if rf, ok := ret.Get(1).(func(context.Context, primitive.M, int, int) error); ok {
 		r1 = rf(ctx, filter, limit, offset)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetAdsByKey provides a mock function with given fields: ctx, key
+func (_m *MockAdvertisementService) GetAdsByKey(ctx context.Context, key string) ([]*models.Advertisement, error) {
+	ret := _m.Called(ctx, key)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetAdsByKey")
+	}
+
+	var r0 []*models.Advertisement
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]*models.Advertisement, error)); ok {
+		return rf(ctx, key)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) []*models.Advertisement); ok {
+		r0 = rf(ctx, key)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*models.Advertisement)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, key)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -133,6 +181,24 @@ func (_m *MockAdvertisementService) IncrByDate(ctx context.Context, key string) 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
 		r0 = rf(ctx, key)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SetAdsByKey provides a mock function with given fields: ctx, key, ads, expiration
+func (_m *MockAdvertisementService) SetAdsByKey(ctx context.Context, key string, ads []*models.Advertisement, expiration time.Duration) error {
+	ret := _m.Called(ctx, key, ads, expiration)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetAdsByKey")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, []*models.Advertisement, time.Duration) error); ok {
+		r0 = rf(ctx, key, ads, expiration)
 	} else {
 		r0 = ret.Error(0)
 	}

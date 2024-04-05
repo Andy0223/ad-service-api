@@ -5,7 +5,9 @@ import (
 	"ad-service-api/internal/models"
 	"ad-service-api/internal/validators"
 	"ad-service-api/utils"
+	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -71,11 +73,18 @@ func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 		return
 	}
 	// Increment the Redis counter for today's ads
-	if err := h.AdvertisementService.IncrByDate(c, "ads:"+today); err != nil {
+	if err := h.AdvertisementService.IncrByDate(c, today); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to increment ad count: " + err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"message": "Advertisement created successfully"})
+
+	// Invalidate the cache for the list of ads
+	if err := h.AdvertisementService.DeleteAdsByPattern(c, "ads:*"); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to invalidate cache: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Advertisement created successfully", "ad": ad})
 }
 
 // ListAdHandler lists all advertisements
@@ -86,24 +95,43 @@ func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 // @Success 200 {array} models.Advertisement
 // @Router /api/v1/ads [get]
 func (h *AdvertisementHandler) ListAdHandler(c *gin.Context) {
-	filter, err := validators.ListAdParamsValidation(c.Request.URL.Query())
+	queryParams, err := validators.ListAdParamsValidation(c.Request.URL.Query())
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid query parameters: " + err.Error()})
 		return
 	}
 
-	limit, offset, err := utils.GetPaginationParams(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid pagination parameters: " + err.Error()})
-		return
-	}
+	// Generate a unique key for this set of query parameters
+	key := utils.GenerateRedisKey(queryParams)
 
-	// List filtered advertisements
-	filteredAds, err := h.AdvertisementService.Fetch(c, filter, limit, offset)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list advertisements: " + err.Error()})
-		return
-	}
+	// Try to get the result from Redis first
+	result, _ := h.AdvertisementService.GetAdsByKey(c, key)
 
-	c.JSON(http.StatusOK, gin.H{"ads": filteredAds})
+	if result == nil {
+		// Create a filter, limit, and offset based on the query parameters
+		filter := utils.CreateFilter(queryParams)
+		limit, _ := strconv.Atoi(queryParams["limit"])
+		offset, _ := strconv.Atoi(queryParams["offset"])
+
+		// If the result is not in Redis, get it from the database
+		filteredAds, err := h.AdvertisementService.Fetch(c, filter, limit, offset)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list advertisements: " + err.Error()})
+			return
+		}
+
+		// Store the result in Redis for future use
+		err = h.AdvertisementService.SetAdsByKey(c, key, filteredAds, 1000*time.Millisecond)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to cache advertisements: " + err.Error()})
+			return
+		}
+
+		// Return the result
+		c.JSON(http.StatusOK, gin.H{"ads": filteredAds})
+	} else {
+		// Return the result from Redis
+		fmt.Println("result", result)
+		c.JSON(http.StatusOK, gin.H{"ads": result})
+	}
 }

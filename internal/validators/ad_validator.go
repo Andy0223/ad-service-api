@@ -9,15 +9,14 @@ import (
 	"time"
 
 	"github.com/pariz/gountries"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 func ValidateAgeRange(ageStart, ageEnd int) error {
 	if ageStart < 1 || ageStart > 100 {
-		return errors.New("ageStart out of range")
+		return errors.New("ageStart should be between 1 and 100")
 	}
 	if ageEnd < 1 || ageEnd > 100 {
-		return errors.New("ageEnd out of range")
+		return errors.New("ageEnd should be between 1 and 100")
 	}
 	if ageStart > ageEnd {
 		return errors.New("ageStart must be less than or equal to ageEnd")
@@ -25,40 +24,59 @@ func ValidateAgeRange(ageStart, ageEnd int) error {
 	return nil
 }
 
-func ValidateAgeQueryParam(age int) error {
-	if age < 1 || age > 100 {
-		return errors.New("ageStart out of range")
+func ValidateAgeQueryParam(age string) error {
+	ageInt, err := strconv.Atoi(age)
+	if err != nil {
+		return fmt.Errorf("invalid age: %v", err)
+	}
+	if ageInt < 1 || ageInt > 100 {
+		return errors.New("age should be between 1 and 100")
 	}
 	return nil
 }
 
-func ValidateGenders(genders []string) error {
+func ValidateGender(genders string) error {
 	validGenders := map[string]bool{"M": true, "F": true}
-	for _, gender := range genders {
-		if _, ok := validGenders[gender]; !ok {
-			return fmt.Errorf("invalid gender: %v", gender)
-		}
+	if _, ok := validGenders[genders]; !ok {
+		return errors.New("invalid gender")
 	}
 	return nil
 }
 
-func ValidateCountries(countries []string) error {
+func ValidateCountry(country string) error {
 	queryService := gountries.New()
-	for _, country := range countries {
-		_, err := queryService.FindCountryByAlpha(country)
-		if err != nil {
-			return err
-		}
+	if _, err := queryService.FindCountryByAlpha(country); err != nil {
+		return fmt.Errorf("invalid country: %v", country)
 	}
 	return nil
 }
 
-func ValidatePlatforms(platforms []string) error {
+func ValidatePlatform(platforms string) error {
 	validPlatforms := map[string]bool{"ios": true, "android": true, "web": true}
-	for _, platform := range platforms {
-		if _, ok := validPlatforms[platform]; !ok {
-			return fmt.Errorf("invalid platform: %v", platform)
-		}
+	if _, ok := validPlatforms[platforms]; !ok {
+		return errors.New("invalid platform")
+	}
+	return nil
+}
+
+func ValidateLimit(limit string) error {
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil {
+		return fmt.Errorf("invalid limit: %v", err)
+	}
+	if limitInt < 1 || limitInt > 100 {
+		return errors.New("limit should be between 1 and 100")
+	}
+	return nil
+}
+
+func ValidateOffset(offset string) error {
+	offsetInt, err := strconv.Atoi(offset)
+	if err != nil {
+		return fmt.Errorf("invalid offset: %v", err)
+	}
+	if offsetInt < 0 {
+		return errors.New("offset should be greater than or equal to 0")
 	}
 	return nil
 }
@@ -69,72 +87,93 @@ func CreateAdValueValidation(ad models.Advertisement) error {
 		return errors.New("startAt must be before endAt")
 	}
 
+	if ad.EndAt.Before(time.Now()) {
+		return errors.New("endAt must be after the current time")
+	}
+
 	// Validate age range
 	if err := ValidateAgeRange(ad.Conditions.AgeStart, ad.Conditions.AgeEnd); err != nil {
 		return err
 	}
 
 	// Validate genders
-	if err := ValidateGenders(ad.Conditions.Genders); err != nil {
-		return err
+	for _, gender := range ad.Conditions.Gender {
+		if err := ValidateGender(gender); err != nil {
+			return err
+		}
 	}
 
 	// Validate countries
-	if err := ValidateCountries(ad.Conditions.Countries); err != nil {
-		return err
+	for _, country := range ad.Conditions.Country {
+		if err := ValidateCountry(country); err != nil {
+			return err
+		}
 	}
 
 	// Validate platforms
-	if err := ValidatePlatforms(ad.Conditions.Platforms); err != nil {
-		return err
+	for _, platform := range ad.Conditions.Platform {
+		if err := ValidatePlatform(platform); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func ListAdParamsValidation(query url.Values) (bson.M, error) {
-	filter := bson.M{
-		"startAt": bson.M{"$lte": time.Now()},
-		"endAt":   bson.M{"$gte": time.Now()},
-	}
+func ListAdParamsValidation(query url.Values) (map[string]string, error) {
+	queryParams := make(map[string]string)
 
-	// Age condition validation
-	if ageStr := query.Get("age"); ageStr != "" {
-		age, err := strconv.Atoi(ageStr) // String to int
-		if err != nil {
-			return nil, fmt.Errorf("invalid age: %v", err)
-		}
+	// AgeStart condition validation
+	if age := query.Get("age"); age != "" {
 		if err := ValidateAgeQueryParam(age); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("age validation failed: %w", err)
 		}
-
-		filter["conditions.ageRange.ageStart"] = bson.M{"$lte": age}
-		filter["conditions.ageRange.ageEnd"] = bson.M{"$gte": age}
+		queryParams["age"] = age
 	}
 
 	// Gender condition validation
-	if genders, ok := query["gender"]; ok && len(genders) > 0 {
-		if err := ValidateGenders(genders); err != nil {
-			return nil, err
+	if gender := query.Get("gender"); gender != "" {
+		if err := ValidateGender(gender); err != nil {
+			return nil, fmt.Errorf("gender validation failed: %w", err)
 		}
-		filter["conditions.genders"] = bson.M{"$in": genders}
+		queryParams["gender"] = gender
 	}
 
 	// Country condition validation
-	if countries, ok := query["country"]; ok && len(countries) > 0 {
-		if err := ValidateCountries(countries); err != nil {
-			return nil, err
+	if country := query.Get("country"); country != "" {
+		if err := ValidateCountry(country); err != nil {
+			return nil, fmt.Errorf("country validation failed: %w", err)
 		}
-		filter["conditions.countries"] = bson.M{"$in": countries}
+		queryParams["country"] = country
 	}
 
 	// Platform condition validation
-	if platforms, ok := query["platform"]; ok && len(platforms) > 0 {
-		if err := ValidatePlatforms(platforms); err != nil {
-			return nil, err
+	if platform := query.Get("platform"); platform != "" {
+		if err := ValidatePlatform(platform); err != nil {
+			return nil, fmt.Errorf("platform validation failed: %w", err)
 		}
-		filter["conditions.platforms"] = bson.M{"$in": platforms}
+		queryParams["platform"] = platform
 	}
 
-	return filter, nil
+	// Limit condition validation
+	limit := query.Get("limit")
+	if limit == "" {
+		limit = "5" // Default value
+	}
+	if err := ValidateLimit(limit); err != nil {
+		return nil, fmt.Errorf("limit validation failed: %w", err)
+	}
+	queryParams["limit"] = limit
+
+	// Offset condition validation
+	offset := query.Get("offset")
+	if offset == "" {
+		offset = "0" // Default value
+	}
+	if err := ValidateOffset(offset); err != nil {
+		return nil, fmt.Errorf("offset validation failed: %w", err)
+	}
+	queryParams["offset"] = offset
+
+	return queryParams, nil
 }
