@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -9,8 +10,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func ConnectMongoDB(uri string, dbname string, collectionName string) (*mongo.Collection, error) {
+func ConnectMongoDB(username string, password string, host string, dbname string, collectionName string) (*mongo.Collection, error) {
 	var col *mongo.Collection
+
+	uri := fmt.Sprintf("mongodb://%s:%s@%s/%s", username, password, host, dbname)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

@@ -16,13 +16,15 @@ import (
 
 // NewRouter creates a new router
 func NewRouter() *gin.Engine {
-	mongoUri := os.Getenv("MONGO_URI")
+	mongoUsername := os.Getenv("MONGO_USERNAME")
+	mongoPassword := os.Getenv("MONGO_PASSWORD")
+	mongoHost := os.Getenv("MONGO_HOST")
 	mongoDb := os.Getenv("MONGO_DB")
 	mongoCollection := os.Getenv("MONGO_COLLECTION")
 	redisHost := os.Getenv("REDIS_HOST")
 	redisPassword := os.Getenv("REDIS_PASSWORD")
 	redisDb := 0
-	col, _ := database.ConnectMongoDB(mongoUri, mongoDb, mongoCollection)
+	col, _ := database.ConnectMongoDB(mongoUsername, mongoPassword, mongoHost, mongoDb, mongoCollection)
 	rdb, _ := redis.ConnectRedis(redisHost, redisPassword, redisDb)
 
 	adRepo := repository.NewAdvertisementRepository(col)
