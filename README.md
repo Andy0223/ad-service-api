@@ -75,12 +75,9 @@ This part is ready for the autoscaling and load balancing to handle substantial 
     --from-literal=database=0
     ```
 
-6. Use below cmd to build a connection tunnel from localhost to minikube
-    ```sh
-    minikube tunnel
-    ```
+7. change to new docker image for `ad-service-api` tag in `values.yaml` by refering to deploy stage in Github Action
 
-7. Ready to release the helm chart and build resources
+8. Ready to release the helm chart and build resources
     ```sh
     # move to helm directory
     cd helm
@@ -90,6 +87,11 @@ This part is ready for the autoscaling and load balancing to handle substantial 
 
     # if you'd released before, and you've changed helm chart config
     helm upgrade ad-service-api ./ad-service-api
+    ```
+
+9. Use below cmd to build a connection tunnel from localhost to minikube
+    ```sh
+    minikube tunnel
     ```
 
 ## API Endpoints
