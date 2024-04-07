@@ -131,7 +131,7 @@ func (suite *AdvertisementServiceSuite) TestAdvertisementService_IsAdExpired() {
 		{Title: "Test Ad 2", EndAt: time.Now().Add(-time.Hour)},
 	}
 
-	isExpired := suite.s.IsAdExpired(ads)
+	isExpired := suite.s.IsAdExpired(ads, time.Now())
 
 	assert.True(suite.T(), isExpired)
 }

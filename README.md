@@ -6,12 +6,12 @@ This project is a Go-based advertisement service API. It provides endpoints for 
 
 # Design Logic
 
-1. **MongoDB: Store advertisements**
-    - Simple: for small project quick setup
-    - Speed: MongoDB can provide fast access to data due to its ability to handle large amounts of unstructured data, which can be beneficial for an advertisement service where speed is crucial for a good user experience.
-    - Scalability: MongoDB is designed to be horizontally scalable, which can be beneficial for a service that might need to handle a large volume of data and traffic.
+1. **MongoDB:** [advertisement structure](/internal/models/advertisemesnt.go)
+    - **Simple:** for small project quick setup
+    - **Speed:** MongoDB can provide fast access to data due to its ability to handle large amounts of unstructured data, which can be beneficial for an advertisement service where speed is crucial for a good user experience.
+    - **Scalability:** MongoDB is designed to be horizontally scalable, which can be beneficial for a service that might need to handle a large volume of data and traffic.
 
-2. **Redis:** Store ads which is frequently queried, which can provide faster access than mongodb
+2. **Redis:** Store advertisements which is frequently queried or only for temporary need. Redis provide faster access than mongodb
     - **DailyAdCreatedCounts:** store the ads created today
     - **Advertisements list with specific query params:**
         - if a new advertisement is inserted to database, the key will be removed from redis
@@ -29,28 +29,41 @@ This project is a Go-based advertisement service API. It provides endpoints for 
 
 ## Project Structure
 
-- [`database/`](database/): Contains the MongoDB connection setup.
+- [`database/`](database/): Contains the MongoDB related functionality.
+    - [`mongo-init/`](/database/mongo-init/): initialize new user and database
+
 - [`docs/`](docs/): Contains the Swagger documentation for the API description.
+
+- [`helm/`](helm/): Contains Helm chart files for deploying the application on Kubernetes.
+    - [`ad-service-api/`](helm/ad-service-api/): Contains the resources config for the Ad Service API.
+
 - [`internal/`](internal/): Contains the core business logic of the application.
-  - `advertisement/`: Contains the handlers, repositories, and services for the advertisement functionality.
-  - `middleware/`: Contains middleware functions.
-  - `models/`: Contains the data models used in the application.
-- `router/`: Contains the router setup for the API.
-- `validators/`: Contains validation logic for the API inputs.
+    - `advertisement/`: Contains the handlers, repositories, and services for the advertisement functionality.
+    - `middleware/`: Contains middleware functions. ex: logger
+    - `models/`: Contains the data models used in the application.
+
+- [`router/`](internal/router/): Contains the router setup for the API.
+
+- [`validators/`](internal/validators/): Contains validation logic for inputs from API endpoints.
+
 - [`redis/`](redis/): Contains the Redis connection setup.
-- [`utils/`](utils/): Contains utility functions used across the application.
+
+- [`mock/`](mocks/): Contains the mock functions for service and repository
 
 ## Setup and Running
 
-### Using Docker in local environment
+### Using Docker in local environment (for development)
 To set up the project, please navigate to your root directory to execute the `docker-compose.yml` in the terminal by running below cmd:
 
 ```sh
+# move to root dir
+cd ad-service-api
+
 # flag -d make docker container run in background.
 docker-compose up -d
 ```
 
-- **--build**: If you have changed the Dockerfile, you should add this flag after above command to ensure the setup of latest image. After succesfully build new image, ensure to delete the old image in you docker
+- **--build**: If you have changed the Dockerfile, you should add this flag after above command to ensure the setup of latest image. After succesfully build new image, ensure to delete the old image in you docker.
 
 This will start the server on your local machine by using docker.
 
@@ -99,17 +112,17 @@ This design is ready for the autoscaling and load balancing to handle substantia
     --from-literal=mongodb-root-password=YOUR_ROOT_PASSWORD \
     --from-literal=username=YOUR_USERNAME \
     --from-literal=password=YOUR_PASSWORD_FOR_USERNAME \
-    --from-literal=host=<K8S_SERVICE_NAME_FOR_MONGO>:<MONGO_PORT> \
+    --from-literal=host=<CHART_NAME-mongo>:<MONGO_PORT> \
     --from-literal=database=YOUR_DATABASE_NAME
 
     # redis-secret
     kubectl create secret generic redis-secret \
     --from-literal=redis-password=YOUR_REDIS_PASSWORD \
-    --from-literal=host=<K8S_SERVICE_NAME_FOR_REDIS>:<REDIS_PORT> \
+    --from-literal=host=<CHAERT_NAME-redis-master>:<REDIS_PORT> \
     --from-literal=database=0
     ```
 
-7. change to new docker image tag for `ad-service-api` in `values.yaml` by refering to deploy stage in Github Action (e.g. build-01)
+7. change to new docker image tag for `ad-service-api` in `values.yaml` by refering to deploy stage within Github Action (e.g. build-01)
 
 8. Ready to release the helm chart and build resources
     ```sh
@@ -128,9 +141,34 @@ This design is ready for the autoscaling and load balancing to handle substantia
     minikube tunnel
     ```
 
+10. Start to send API requests
+    ```sh
+    # Create Ad via POST /api/v1/ad
+    curl -X POST -H "Content-Type: application/json" \
+    "http://ad-service-api.local/api/v1/ad" \
+    --data '{
+        "title": "AD 01",
+        "startAt": "2024-03-29T03:00:00.000Z",
+        "endAt": "2024-04-08T23:00:00.000Z",
+        "conditions": {
+            "ageStart":20,
+            "ageEnd":100,
+            "gender": ["M", "F"],
+            "country": ["TW", "US"],
+            "platform": ["android", "web"]
+        }
+    }'
+
+    # list ads via GET /api/v1/ad
+    curl -X GET -H "Content-Type: application/json" \
+    "http://ad-service-api.local/api/v1/ad?country=TW"
+    ```
 ## API Endpoints
 
 The API provides the following endpoints:
+
+1. if you build with docker-compose at local environment, your api host is `localhost:8080`
+2. if you deploy to minikube via helm chart, your api host is `ad-service-api.local`
 
 - `POST /api/v1/ad`: Creates a new advertisement. The request body should be a JSON object that matches the `models.Advertisement` structure.
 - `GET /api/v1/ad`: Lists all advertisements which match the query parameters if they exist. Below is the params list:
@@ -140,12 +178,14 @@ The API provides the following endpoints:
     - *can be empty*
   - platform: specify the device type you plan to post on
     - *can be empty*
-  - limit: resrtict the ad amounts 
+  - limit: resrtict the ad amounts
     - *default to 5*
   - offset: shift the starting point of the data returned
     - *default to 0*
 
 ## Testing
+
+**This part is for local testing in your terminal**
 
 Unit tests is to ensure tha basic logic for each functions without depending on the external service. They are located in the same directories as the files they are testing tailed with . For example, tests for the advertisement handler are located in [`internal/advertisement/handler/advertisement_handler_test.go`](internal/advertisement/handler/advertisement_handler_test.go).
 
@@ -158,6 +198,9 @@ go test ./...
 Notice: If you add new functions to service or repository layer, please run below cmd to create new mock functions
 
 ```sh
+# move to root
+cd ad-service-api
+
 # service layer
 mockery --name=IAdvertisementService \
 --structname=MockAdvertisementService \
@@ -175,9 +218,11 @@ mockery --name=IAdRedisRepository \
 
 ## CI/CD
 
-For this project, we use Github Action to automatically set up a pipeline when you push the code to main branch, and the workflow would follow init, test, build image and deploy stages
+For this project, we use Github Action to automatically set up a pipeline when you push the code to main branch, and the workflow would follow initialize, test, build image and deploy stage - [workflow](.github/workflows/.github.yaml)
 
-Noticed: if you fork this project to your repo, and use the docker repo which is private, remember to set the Github secrets for docker image pull secrets in your Github repository secrets.
+***Pipline: Initialize -> Build -> Test -> Deploy***
+
+Noticed: if you fork this project to your repo, and use the docker repo which is private, remember to set the Github secrets for docker image pull secrets in your Github repository secrets. If the docker repo is public, just skip this part.
 
 1. For docker username use this name: DOCKERHUB_USERNAME
 2. For docker password use this name: DOCKERHUB_PASSWORD

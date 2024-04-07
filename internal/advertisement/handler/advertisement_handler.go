@@ -95,6 +95,8 @@ func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 // @Success 200 {array} models.Advertisement
 // @Router /api/v1/ad [get]
 func (h *AdvertisementHandler) ListAdHandler(c *gin.Context) {
+	now := time.Now()
+	// Validate the query parameters
 	validQueryParams, err := validators.ListAdParamsValidation(c.Request.URL.Query())
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid query parameters: " + err.Error()})
@@ -108,7 +110,7 @@ func (h *AdvertisementHandler) ListAdHandler(c *gin.Context) {
 	result, _ := h.AdvertisementService.GetAdsByKey(c, key)
 
 	// Check if the ad from redis is expired
-	isAdexpired := h.AdvertisementService.IsAdExpired(result)
+	isAdexpired := h.AdvertisementService.IsAdExpired(result, now)
 
 	if result == nil || isAdexpired {
 		// Create a filter, limit, and offset based on the query parameters

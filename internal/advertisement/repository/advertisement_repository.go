@@ -56,7 +56,7 @@ func (r *AdvertisementRepository) CountActive(ctx context.Context, now time.Time
 
 // Fetch retrieves advertisements from the MongoDB collection based on the provided filter, limit, and offset.
 func (r *AdvertisementRepository) Fetch(ctx context.Context, filter bson.M, limit, offset int) ([]*models.Advertisement, error) {
-	findOptions := options.Find().SetLimit(int64(limit)).SetSkip(int64(offset))
+	findOptions := options.Find().SetLimit(int64(limit)).SetSkip(int64(offset)).SetSort(bson.D{{Key: "endAt", Value: 1}})
 	cursor, err := r.collection.Find(ctx, filter, findOptions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find advertisements: %w", err)

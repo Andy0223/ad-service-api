@@ -77,8 +77,7 @@ func (suite *AdvertisementHandlerSuite) TestAdvertisementHandler_ListAdHandler()
 
 	// Mock GetAdsByKey to return nil, indicating cache miss
 	suite.mockAdService.On("GetAdsByKey", mock.Anything, mock.Anything).Return(nil, nil)
-
-	suite.mockAdService.On("IsAdExpired", mock.Anything).Return(false)
+	suite.mockAdService.On("IsAdExpired", mock.Anything, mock.AnythingOfType("time.Time")).Return(false)
 
 	// Set the call expectation for the mock method, return specific test data
 	suite.mockAdService.On("Fetch", mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("primitive.M"), expectedLimit, expectedOffset).Return(expectedAds, nil)
@@ -89,7 +88,7 @@ func (suite *AdvertisementHandlerSuite) TestAdvertisementHandler_ListAdHandler()
 	// Create response recorder and gin context
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request, _ = http.NewRequest(http.MethodGet, "/api/v1/ads", nil)
+	c.Request, _ = http.NewRequest(http.MethodGet, "/api/v1/ad", nil)
 
 	// Call the handler
 	suite.h.ListAdHandler(c)
@@ -101,24 +100,20 @@ func (suite *AdvertisementHandlerSuite) TestAdvertisementHandler_ListAdHandler()
 	var adsResponse gin.H
 	err := json.NewDecoder(w.Body).Decode(&adsResponse)
 	assert.NoError(suite.T(), err)
-
 	adsInterface, ok := adsResponse["ads"].([]interface{})
 	assert.True(suite.T(), ok, "The type of the returned ad list should match the expected value")
-
 	adsValue := make([]*models.Advertisement, len(adsInterface))
+
 	for i, v := range adsInterface {
 		bytes, err := json.Marshal(v)
 		assert.NoError(suite.T(), err)
-
 		ad := &models.Advertisement{}
 		err = json.Unmarshal(bytes, ad)
 		assert.NoError(suite.T(), err)
-
 		adsValue[i] = ad
 	}
-	assert.Equal(suite.T(), expectedAds, adsValue, "The returned ad list should match the expected value")
 
-	// Verify if the call expectation of the mock service is met
+	assert.Equal(suite.T(), expectedAds, adsValue)
 	suite.mockAdService.AssertExpectations(suite.T())
 }
 
