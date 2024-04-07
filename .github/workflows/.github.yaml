@@ -6,22 +6,8 @@ on:
 
 jobs:
 
-  init:
-    name: Initialize
-    runs-on: ubuntu-latest
-    steps:
-    - name: Set up Go 1.x
-      uses: actions/setup-go@v5
-      with:
-        go-version: ^1.22.1
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v4
-    - name: Get dependencies
-      run: go mod download
-
   test:
     name: Test
-    needs: init
     runs-on: ubuntu-latest
     steps:
     - name: Check out code into the Go module directory
