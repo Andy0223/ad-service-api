@@ -1,5 +1,4 @@
 version: '3'
-
 services:
   app:
     build: .
@@ -24,8 +23,11 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=root
+      - MONGO_INITDB_DATABASE=2024DcardBackend
+      - MONGO_USERNAME=test
+      - MONGO_PASSWORD=test
     volumes:
-      - ./mongo-init:/docker-entrypoint-initdb.d
+      - ./database/mongo-init:/docker-entrypoint-initdb.d
   redis:
     image: redis
     ports:
