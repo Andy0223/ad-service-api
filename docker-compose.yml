@@ -24,10 +24,10 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=root
       - MONGO_INITDB_DATABASE=2024DcardBackend
-      - MONGO_USERNAME=test
-      - MONGO_PASSWORD=test
+      - MONGO_INITDB_USERNAME=test
+      - MONGO_INITDB_PASSWORD=test
     volumes:
-      - ./database/mongo-init:/docker-entrypoint-initdb.d
+      - ./mongo-init:/docker-entrypoint-initdb.d
   redis:
     image: redis
     ports:
