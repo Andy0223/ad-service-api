@@ -172,13 +172,13 @@ The API provides the following endpoints:
 
 - `POST /api/v1/ad`: Creates a new advertisement. The request body should be a JSON object that matches the `models.Advertisement` structure.
 - `GET /api/v1/ad`: Lists all advertisements which match the query parameters if they exist. Below is the params list:
-  - age: specify the target audience age
+  - age: specify the target audience age (1 ~ 100)
     - *can be empty*
-  - country: specify the target audience country
+  - country: specify the target audience country (follow [ISO 3166-1](https://zh.wikipedia.org/zh-tw/ISO_3166-1))
     - *can be empty*
-  - platform: specify the device type you plan to post on
+  - platform: specify the device type you plan to post on (ios, web, android)
     - *can be empty*
-  - limit: resrtict the ad amounts
+  - limit: resrtict the ad amounts (1 ~ 100)
     - *default to 5*
   - offset: shift the starting point of the data returned
     - *default to 0*
