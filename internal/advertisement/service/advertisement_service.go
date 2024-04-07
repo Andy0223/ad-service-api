@@ -18,7 +18,7 @@ type IAdvertisementService interface {
 	GetAdsByKey(ctx context.Context, key string) ([]*models.Advertisement, error)
 	SetAdsByKey(ctx context.Context, key string, ads []*models.Advertisement, expiration time.Duration) error
 	DeleteAdsByPattern(ctx context.Context, pattern string) error
-	IsAdExpired(ad []*models.Advertisement) bool
+	IsAdExpired(ad []*models.Advertisement, now time.Time) bool
 }
 
 type AdvertisementService struct {
@@ -100,9 +100,9 @@ func (as *AdvertisementService) DeleteAdsByPattern(ctx context.Context, pattern 
 }
 
 // FilterExpiredAds filters out expired ads from a slice of ads
-func (s *AdvertisementService) IsAdExpired(ads []*models.Advertisement) bool {
+func (s *AdvertisementService) IsAdExpired(ads []*models.Advertisement, now time.Time) bool {
 	for _, ad := range ads {
-		if time.Now().After(ad.EndAt) {
+		if now.After(ad.EndAt) {
 			return true
 		}
 	}
