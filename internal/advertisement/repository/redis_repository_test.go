@@ -12,9 +12,9 @@ import (
 	"ad-service-api/internal/models"
 )
 
-func TestAdCountRepository_IncrByDate(t *testing.T) {
+func TestAdRedisRepository_IncrByDate(t *testing.T) {
 	db, mock := redismock.NewClientMock()
-	repo := repository.NewAdCountRepository(db)
+	repo := repository.NewAdRedisRepository(db)
 
 	mock.ExpectIncr("testKey").SetVal(1)
 
@@ -23,9 +23,9 @@ func TestAdCountRepository_IncrByDate(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestAdCountRepository_GetByDate(t *testing.T) {
+func TestAdRedisRepository_GetByDate(t *testing.T) {
 	db, mock := redismock.NewClientMock()
-	repo := repository.NewAdCountRepository(db)
+	repo := repository.NewAdRedisRepository(db)
 
 	mock.ExpectGet("testKey").SetVal("1")
 
@@ -35,9 +35,9 @@ func TestAdCountRepository_GetByDate(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestAdCountRepository_GetAdByKey(t *testing.T) {
+func TestAdRedisRepository_GetAdByKey(t *testing.T) {
 	db, mock := redismock.NewClientMock()
-	repo := repository.NewAdCountRepository(db)
+	repo := repository.NewAdRedisRepository(db)
 
 	ads := []*models.Advertisement{
 		{Title: "test1"},
@@ -52,9 +52,9 @@ func TestAdCountRepository_GetAdByKey(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestAdCountRepository_SetAdsByKey(t *testing.T) {
+func TestAdRedisRepository_SetAdsByKey(t *testing.T) {
 	db, mock := redismock.NewClientMock()
-	repo := repository.NewAdCountRepository(db)
+	repo := repository.NewAdRedisRepository(db)
 
 	ads := []*models.Advertisement{
 		{Title: "test1"},
@@ -68,9 +68,9 @@ func TestAdCountRepository_SetAdsByKey(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestAdCountRepository_DeleteAdsByPattern(t *testing.T) {
+func TestAdRedisRepository_DeleteAdsByPattern(t *testing.T) {
 	db, mock := redismock.NewClientMock()
-	repo := repository.NewAdCountRepository(db)
+	repo := repository.NewAdRedisRepository(db)
 
 	mock.ExpectKeys("testKey").SetVal([]string{"ads:testKey"})
 	mock.ExpectDel("ads:testKey").SetVal(1)
