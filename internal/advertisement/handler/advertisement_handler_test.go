@@ -75,11 +75,13 @@ func (suite *AdvertisementHandlerSuite) TestAdvertisementHandler_ListAdHandler()
 		{Title: "Test Ad 2"},
 	}
 
-	// Set the call expectation for the mock method, return specific test data
-	suite.mockAdService.On("Fetch", mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("primitive.M"), expectedLimit, expectedOffset).Return(expectedAds, nil)
-
 	// Mock GetAdsByKey to return nil, indicating cache miss
 	suite.mockAdService.On("GetAdsByKey", mock.Anything, mock.Anything).Return(nil, nil)
+
+	suite.mockAdService.On("IsAdExpired", mock.Anything).Return(false)
+
+	// Set the call expectation for the mock method, return specific test data
+	suite.mockAdService.On("Fetch", mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("primitive.M"), expectedLimit, expectedOffset).Return(expectedAds, nil)
 
 	// Mock SetAdsByKey to cache the result
 	suite.mockAdService.On("SetAdsByKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
