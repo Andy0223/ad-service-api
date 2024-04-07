@@ -218,9 +218,9 @@ mockery --name=IAdRedisRepository \
 
 ## CI/CD
 
-For this project, we use Github Action to automatically set up a pipeline when you push the code to main branch, and the workflow would follow initialize, test, build image and deploy stage - [workflow](.github/workflows/.github.yaml)
+For this project, we use Github Action to automatically set up a pipeline when you push the code to main branch, and the workflow would follow test, build image and deploy stage - [workflow](.github/workflows/.github.yaml)
 
-***Pipline: Initialize -> Build -> Test -> Deploy***
+***Pipline: Build -> Test -> Deploy***
 
 Noticed: if you fork this project to your repo, and use the docker repo which is private, remember to set the Github secrets for docker image pull secrets in your Github repository secrets. If the docker repo is public, just skip this part.
 
