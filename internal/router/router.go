@@ -28,8 +28,8 @@ func NewRouter() *gin.Engine {
 	rdb, _ := redis.ConnectRedis(redisHost, redisPassword, redisDb)
 
 	adRepo := repository.NewAdvertisementRepository(col)
-	adCountRepo := repository.NewAdCountRepository(rdb)
-	adService := service.NewAdvertisementService(adRepo, adCountRepo)
+	adRedisRepo := repository.NewAdRedisRepository(rdb)
+	adService := service.NewAdvertisementService(adRepo, adRedisRepo)
 	adHandler := handler.NewAdvertisementHandler(adService)
 
 	r := gin.Default()

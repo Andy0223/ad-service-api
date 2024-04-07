@@ -17,15 +17,15 @@ import (
 type AdvertisementServiceSuite struct {
 	suite.Suite
 	mockAdRepo      *mocks.MockAdvertisementRepository
-	mockAdCountRepo *mocks.MockAdCountRepository
+	mockAdRedisRepo *mocks.MockAdRedisRepository
 	s               service.IAdvertisementService
 	ctx             context.Context
 }
 
 func (suite *AdvertisementServiceSuite) SetupTest() {
 	suite.mockAdRepo = new(mocks.MockAdvertisementRepository)
-	suite.mockAdCountRepo = new(mocks.MockAdCountRepository)
-	suite.s = service.NewAdvertisementService(suite.mockAdRepo, suite.mockAdCountRepo)
+	suite.mockAdRedisRepo = new(mocks.MockAdRedisRepository)
+	suite.s = service.NewAdvertisementService(suite.mockAdRepo, suite.mockAdRedisRepo)
 	suite.ctx = context.TODO()
 }
 
@@ -69,36 +69,36 @@ func (suite *AdvertisementServiceSuite) TestAdvertisementService_Fetch() {
 func (suite *AdvertisementServiceSuite) TestAdvertisementService_GetByDate() {
 	today := "2022-01-01"
 
-	suite.mockAdCountRepo.On("GetByDate", suite.ctx, today).Return(1, nil)
+	suite.mockAdRedisRepo.On("GetByDate", suite.ctx, today).Return(1, nil)
 
 	count, err := suite.s.GetByDate(suite.ctx, today)
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), 1, count)
-	suite.mockAdCountRepo.AssertExpectations(suite.T())
+	suite.mockAdRedisRepo.AssertExpectations(suite.T())
 }
 
 func (suite *AdvertisementServiceSuite) TestAdvertisementService_IncrByDate() {
 	key := "2022-01-01"
 
-	suite.mockAdCountRepo.On("IncrByDate", suite.ctx, key).Return(nil)
+	suite.mockAdRedisRepo.On("IncrByDate", suite.ctx, key).Return(nil)
 
 	err := suite.s.IncrByDate(suite.ctx, key)
 
 	assert.NoError(suite.T(), err)
-	suite.mockAdCountRepo.AssertExpectations(suite.T())
+	suite.mockAdRedisRepo.AssertExpectations(suite.T())
 }
 
 func (suite *AdvertisementServiceSuite) TestAdvertisementService_GetAdsByKey() {
 	key := "test"
 
-	suite.mockAdCountRepo.On("GetAdsByKey", suite.ctx, key).Return([]*models.Advertisement{}, nil)
+	suite.mockAdRedisRepo.On("GetAdsByKey", suite.ctx, key).Return([]*models.Advertisement{}, nil)
 
 	ads, err := suite.s.GetAdsByKey(suite.ctx, key)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), ads)
-	suite.mockAdCountRepo.AssertExpectations(suite.T())
+	suite.mockAdRedisRepo.AssertExpectations(suite.T())
 }
 
 func (suite *AdvertisementServiceSuite) TestAdvertisementService_SetAdsByKey() {
@@ -106,23 +106,23 @@ func (suite *AdvertisementServiceSuite) TestAdvertisementService_SetAdsByKey() {
 	ads := []*models.Advertisement{}
 	expiration := time.Second
 
-	suite.mockAdCountRepo.On("SetAdsByKey", suite.ctx, key, ads, expiration).Return(nil)
+	suite.mockAdRedisRepo.On("SetAdsByKey", suite.ctx, key, ads, expiration).Return(nil)
 
 	err := suite.s.SetAdsByKey(suite.ctx, key, ads, expiration)
 
 	assert.NoError(suite.T(), err)
-	suite.mockAdCountRepo.AssertExpectations(suite.T())
+	suite.mockAdRedisRepo.AssertExpectations(suite.T())
 }
 
 func (suite *AdvertisementServiceSuite) TestAdvertisementService_DeleteAdsByPattern() {
 	pattern := "test"
 
-	suite.mockAdCountRepo.On("DeleteAdsByPattern", suite.ctx, pattern).Return(nil)
+	suite.mockAdRedisRepo.On("DeleteAdsByPattern", suite.ctx, pattern).Return(nil)
 
 	err := suite.s.DeleteAdsByPattern(suite.ctx, pattern)
 
 	assert.NoError(suite.T(), err)
-	suite.mockAdCountRepo.AssertExpectations(suite.T())
+	suite.mockAdRedisRepo.AssertExpectations(suite.T())
 }
 
 func (suite *AdvertisementServiceSuite) TestAdvertisementService_IsAdExpired() {

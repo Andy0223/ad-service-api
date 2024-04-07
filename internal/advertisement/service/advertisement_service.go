@@ -23,13 +23,13 @@ type IAdvertisementService interface {
 
 type AdvertisementService struct {
 	adRepo      repository.IAdvertisementRepository
-	adCountRepo repository.IAdCountRepository
+	adRedisRepo repository.IAdRedisRepository
 }
 
-func NewAdvertisementService(adRepo repository.IAdvertisementRepository, adCountRepo repository.IAdCountRepository) IAdvertisementService {
+func NewAdvertisementService(adRepo repository.IAdvertisementRepository, adRedisRepo repository.IAdRedisRepository) IAdvertisementService {
 	return &AdvertisementService{
 		adRepo:      adRepo,
-		adCountRepo: adCountRepo,
+		adRedisRepo: adRedisRepo,
 	}
 }
 
@@ -58,7 +58,7 @@ func (as *AdvertisementService) Fetch(ctx context.Context, filter primitive.M, l
 }
 
 func (as *AdvertisementService) GetByDate(ctx context.Context, today string) (int, error) {
-	count, err := as.adCountRepo.GetByDate(ctx, today)
+	count, err := as.adRedisRepo.GetByDate(ctx, today)
 	if err != nil {
 		return 0, err
 	}
@@ -66,7 +66,7 @@ func (as *AdvertisementService) GetByDate(ctx context.Context, today string) (in
 }
 
 func (as *AdvertisementService) IncrByDate(ctx context.Context, key string) error {
-	err := as.adCountRepo.IncrByDate(ctx, key)
+	err := as.adRedisRepo.IncrByDate(ctx, key)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (as *AdvertisementService) IncrByDate(ctx context.Context, key string) erro
 }
 
 func (as *AdvertisementService) GetAdsByKey(ctx context.Context, key string) ([]*models.Advertisement, error) {
-	ads, err := as.adCountRepo.GetAdsByKey(ctx, key)
+	ads, err := as.adRedisRepo.GetAdsByKey(ctx, key)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (as *AdvertisementService) GetAdsByKey(ctx context.Context, key string) ([]
 
 // SetAdsByKey sets the advertisements associated with the specified key in Redis.
 func (as *AdvertisementService) SetAdsByKey(ctx context.Context, key string, ads []*models.Advertisement, expiration time.Duration) error {
-	err := as.adCountRepo.SetAdsByKey(ctx, key, ads, expiration)
+	err := as.adRedisRepo.SetAdsByKey(ctx, key, ads, expiration)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (as *AdvertisementService) SetAdsByKey(ctx context.Context, key string, ads
 
 // DeleteAdsByPattern deletes the advertisements associated with the specified pattern in Redis.
 func (as *AdvertisementService) DeleteAdsByPattern(ctx context.Context, pattern string) error {
-	err := as.adCountRepo.DeleteAdsByPattern(ctx, pattern)
+	err := as.adRedisRepo.DeleteAdsByPattern(ctx, pattern)
 	if err != nil {
 		return err
 	}
