@@ -188,6 +188,24 @@ func (_m *MockAdvertisementService) IncrByDate(ctx context.Context, key string) 
 	return r0
 }
 
+// IsAdExpired provides a mock function with given fields: ad
+func (_m *MockAdvertisementService) IsAdExpired(ad []*models.Advertisement) bool {
+	ret := _m.Called(ad)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsAdExpired")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func([]*models.Advertisement) bool); ok {
+		r0 = rf(ad)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // SetAdsByKey provides a mock function with given fields: ctx, key, ads, expiration
 func (_m *MockAdvertisementService) SetAdsByKey(ctx context.Context, key string, ads []*models.Advertisement, expiration time.Duration) error {
 	ret := _m.Called(ctx, key, ads, expiration)
