@@ -28,15 +28,18 @@ func NewRouter() *gin.Engine {
 	rdb, _ := redis.ConnectRedis(redisHost, redisPassword, redisDb)
 
 	adRepo := repository.NewAdvertisementRepository(col)
-	adCountRepo := repository.NewAdCountRepository(rdb)
-	adService := service.NewAdvertisementService(adRepo, adCountRepo)
+	adRedisRepo := repository.NewAdRedisRepository(rdb)
+	adService := service.NewAdvertisementService(adRepo, adRedisRepo)
 	adHandler := handler.NewAdvertisementHandler(adService)
 
 	r := gin.Default()
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	r.POST("/api/v1/ad", adHandler.CreateAdHandler)
-	r.GET("/api/v1/ads", adHandler.ListAdHandler)
+	adRoutes := r.Group("/api/v1")
+	{
+		adRoutes.POST("/ad", adHandler.CreateAdHandler)
+		adRoutes.GET("/ad", adHandler.ListAdHandler)
+	}
 
 	return r
 }

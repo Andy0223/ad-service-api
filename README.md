@@ -4,6 +4,29 @@ This project is a Go-based advertisement service API. It provides endpoints for 
 
 *Noticed: This readme is specific for MacOS, if you're using different OS, please find the corresponding cmd for your needs.*
 
+# Design Logic
+
+1. **MongoDB: Store advertisements**
+    - Simple: for small project quick setup
+    - Speed: MongoDB can provide fast access to data due to its ability to handle large amounts of unstructured data, which can be beneficial for an advertisement service where speed is crucial for a good user experience.
+    - Scalability: MongoDB is designed to be horizontally scalable, which can be beneficial for a service that might need to handle a large volume of data and traffic.
+
+2. **Redis:** Store ads which is frequently queried, which can provide faster access than mongodb
+    - **DailyAdCreatedCounts:** store the ads created today
+    - **Advertisements list with specific query params:**
+        - if a new advertisement is inserted to database, the key will be removed from redis
+        - if the one of the ad from redis is expired, it would directly retrieve the new data from database, and then overwrite a new value with existing key
+
+3. **Layered Architecture:**
+
+    - **Router**: The router is responsible for directing incoming HTTP requests to the appropriate handlers based on the request method (GET, POST, etc.) and the URL. This separation of concerns makes the code easier to maintain and understand.
+
+    - **Handler**: Handlers are functions that execute in response to a particular route being hit. They contain the logic to process the request and send a response. Separating this logic into handlers keeps the code organized and makes it easier to manage.
+
+    - **Service**: The service layer is where the business logic of your application resides. It interacts with the repository to fetch, manipulate, and store data. Keeping business logic in the service layer keeps it separate from the data access logic, making the code more maintainable and testable.
+
+    - **Repository**: The repository is responsible for data storage and retrieval. It interacts with the database or other data sources. By keeping data access code in the repository, you can change the underlying data source without affecting the rest of your code.
+
 ## Project Structure
 
 - [`database/`](database/): Contains the MongoDB connection setup.
@@ -75,7 +98,7 @@ This part is ready for the autoscaling and load balancing to handle substantial 
     --from-literal=database=0
     ```
 
-7. change to new docker image for `ad-service-api` tag in `values.yaml` by refering to deploy stage in Github Action
+7. change to new docker image tag for `ad-service-api` in `values.yaml` by refering to deploy stage in Github Action (e.g. build-01)
 
 8. Ready to release the helm chart and build resources
     ```sh
@@ -99,12 +122,17 @@ This part is ready for the autoscaling and load balancing to handle substantial 
 The API provides the following endpoints:
 
 - `POST /api/v1/ad`: Creates a new advertisement. The request body should be a JSON object that matches the `models.Advertisement` structure.
-- `GET /api/v1/ads`: Lists all advertisements which match the query parameters if they exist. Below is the params list:
-  - age (can be empty)
-  - country (can be empty)
-  - platform (can be empty)
-  - limit (default to 5)
-  - offset (default to 0)
+- `GET /api/v1/ad`: Lists all advertisements which match the query parameters if they exist. Below is the params list:
+  - age: specify the target audience age
+    - *can be empty*
+  - country: specify the target audience country
+    - *can be empty*
+  - platform: specify the device type you plan to post on
+    - *can be empty*
+  - limit: resrtict the ad amounts 
+    - *default to 5*
+  - offset: shift the starting point of the data returned
+    - *default to 0*
 
 ## Testing
 
@@ -114,6 +142,24 @@ To run all tests in the project at local, you can use the following command in y
 
 ```sh
 go test ./...
+```
+
+Notice: If you add new functions to service or repository layer, please run below cmd to create new mock functions
+
+```sh
+# service layer
+mockery --name=IAdvertisementService \
+--structname=MockAdvertisementService \
+--output=mocks --dir=./internal/advertisement/service
+
+# repository layer
+mockery --name=IAdvertisementRepository \
+--structname=MockAdvertisementRepository \
+--output=mocks --dir=./internal/advertisement/repository
+
+mockery --name=IAdRedisRepository \
+--structname=MockAdRedisRepository \
+--output=mocks --dir=./internal/advertisement/repository
 ```
 
 ## CI/CD

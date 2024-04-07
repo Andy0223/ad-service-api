@@ -121,14 +121,14 @@ func CreateAdValueValidation(ad models.Advertisement) error {
 }
 
 func ListAdParamsValidation(query url.Values) (map[string]string, error) {
-	queryParams := make(map[string]string)
+	validQueryParams := make(map[string]string)
 
 	// AgeStart condition validation
 	if age := query.Get("age"); age != "" {
 		if err := ValidateAgeQueryParam(age); err != nil {
 			return nil, fmt.Errorf("age validation failed: %w", err)
 		}
-		queryParams["age"] = age
+		validQueryParams["age"] = age
 	}
 
 	// Gender condition validation
@@ -136,7 +136,7 @@ func ListAdParamsValidation(query url.Values) (map[string]string, error) {
 		if err := ValidateGender(gender); err != nil {
 			return nil, fmt.Errorf("gender validation failed: %w", err)
 		}
-		queryParams["gender"] = gender
+		validQueryParams["gender"] = gender
 	}
 
 	// Country condition validation
@@ -144,7 +144,7 @@ func ListAdParamsValidation(query url.Values) (map[string]string, error) {
 		if err := ValidateCountry(country); err != nil {
 			return nil, fmt.Errorf("country validation failed: %w", err)
 		}
-		queryParams["country"] = country
+		validQueryParams["country"] = country
 	}
 
 	// Platform condition validation
@@ -152,7 +152,7 @@ func ListAdParamsValidation(query url.Values) (map[string]string, error) {
 		if err := ValidatePlatform(platform); err != nil {
 			return nil, fmt.Errorf("platform validation failed: %w", err)
 		}
-		queryParams["platform"] = platform
+		validQueryParams["platform"] = platform
 	}
 
 	// Limit condition validation
@@ -163,7 +163,7 @@ func ListAdParamsValidation(query url.Values) (map[string]string, error) {
 	if err := ValidateLimit(limit); err != nil {
 		return nil, fmt.Errorf("limit validation failed: %w", err)
 	}
-	queryParams["limit"] = limit
+	validQueryParams["limit"] = limit
 
 	// Offset condition validation
 	offset := query.Get("offset")
@@ -173,7 +173,7 @@ func ListAdParamsValidation(query url.Values) (map[string]string, error) {
 	if err := ValidateOffset(offset); err != nil {
 		return nil, fmt.Errorf("offset validation failed: %w", err)
 	}
-	queryParams["offset"] = offset
+	validQueryParams["offset"] = offset
 
-	return queryParams, nil
+	return validQueryParams, nil
 }

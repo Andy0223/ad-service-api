@@ -11,7 +11,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-type IAdCountRepository interface {
+type IAdRedisRepository interface {
 	IncrByDate(ctx context.Context, key string) error
 	GetByDate(ctx context.Context, key string) (int, error)
 	GetAdsByKey(ctx context.Context, key string) ([]*models.Advertisement, error)
@@ -19,20 +19,20 @@ type IAdCountRepository interface {
 	DeleteAdsByPattern(ctx context.Context, pattern string) error
 }
 
-// AdCountRepositoryImpl implements the AdCountRepository interface.
-type AdCountRepository struct {
+// AdRedisRepository is a struct that implements the IAdRedisRepository interface.
+type AdRedisRepository struct {
 	rdb *redis.Client
 }
 
-// NewAdCountRepository creates a new instance of AdCountRepositoryImpl.
-func NewAdCountRepository(rdb *redis.Client) *AdCountRepository {
-	return &AdCountRepository{
+// NewAdRedisRepository creates a new AdRedisRepository with the specified Redis client.
+func NewAdRedisRepository(rdb *redis.Client) *AdRedisRepository {
+	return &AdRedisRepository{
 		rdb: rdb,
 	}
 }
 
 // IncrByDate increments the count associated with the specified date key in Redis.
-func (r *AdCountRepository) IncrByDate(ctx context.Context, key string) error {
+func (r *AdRedisRepository) IncrByDate(ctx context.Context, key string) error {
 	_, err := r.rdb.Incr(ctx, key).Result()
 	if err != nil {
 		return fmt.Errorf("failed to increment count for key %s: %w", key, err)
@@ -41,7 +41,7 @@ func (r *AdCountRepository) IncrByDate(ctx context.Context, key string) error {
 }
 
 // GetByDate retrieves the count associated with the specified date key from Redis.
-func (r *AdCountRepository) GetByDate(ctx context.Context, key string) (int, error) {
+func (r *AdRedisRepository) GetByDate(ctx context.Context, key string) (int, error) {
 	countStr, err := r.rdb.Get(ctx, key).Result()
 	if err == redis.Nil {
 		// Key does not exist, return count as 0
@@ -62,7 +62,7 @@ func (r *AdCountRepository) GetByDate(ctx context.Context, key string) (int, err
 }
 
 // GetAdsByKey retrieves the advertisements associated with the specified key from Redis.
-func (r *AdCountRepository) GetAdsByKey(ctx context.Context, key string) ([]*models.Advertisement, error) {
+func (r *AdRedisRepository) GetAdsByKey(ctx context.Context, key string) ([]*models.Advertisement, error) {
 	adsData, err := r.rdb.Get(ctx, key).Result()
 	if err == redis.Nil {
 		// Key does not exist, return nil
@@ -84,7 +84,7 @@ func (r *AdCountRepository) GetAdsByKey(ctx context.Context, key string) ([]*mod
 }
 
 // SetAdsByKey sets the advertisements associated with the specified key in Redis.
-func (r *AdCountRepository) SetAdsByKey(ctx context.Context, key string, ads []*models.Advertisement, expiration time.Duration) error {
+func (r *AdRedisRepository) SetAdsByKey(ctx context.Context, key string, ads []*models.Advertisement, expiration time.Duration) error {
 	adsData, err := json.Marshal(ads)
 	if err != nil {
 		// Error occurred during marshalling
@@ -101,7 +101,7 @@ func (r *AdCountRepository) SetAdsByKey(ctx context.Context, key string, ads []*
 }
 
 // DeleteAdsByPattern deletes all keys that start with the specified pattern from Redis.
-func (r *AdCountRepository) DeleteAdsByPattern(ctx context.Context, pattern string) error {
+func (r *AdRedisRepository) DeleteAdsByPattern(ctx context.Context, pattern string) error {
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
 		return fmt.Errorf("failed to get keys for pattern %s: %w", pattern, err)
