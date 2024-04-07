@@ -93,7 +93,7 @@ func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 // @ID get-ads
 // @Produce  json
 // @Success 200 {array} models.Advertisement
-// @Router /api/v1/ads [get]
+// @Router /api/v1/ad [get]
 func (h *AdvertisementHandler) ListAdHandler(c *gin.Context) {
 	validQueryParams, err := validators.ListAdParamsValidation(c.Request.URL.Query())
 	if err != nil {
