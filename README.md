@@ -56,9 +56,20 @@ This will start the server on your local machine by using docker.
 
 ### Using Helm Chart and Minikube in local environment
 
-This part is ready for the autoscaling and load balancing to handle substantial requests.
+This design is ready for the autoscaling and load balancing to handle substantial requests.
 
 1. Please ensure that you've installed the minikube and set the config succesfully - [minikube start](https://minikube.sigs.k8s.io/docs/start/)
+
+    ```sh
+    # set alias
+    alias kubectl="minikube kubectl --"
+
+    # start minikube container
+    minikube start
+
+    # enable ingress
+    minikube addons enable ingress
+    ```
 
 2. For docker repo which is public, you don't need imagePullSectets. Instead, if it is private, follow the instruction 3. and 4.
 
@@ -179,6 +190,8 @@ Refer to [set-up-repo-secrets-in-github](https://docs.github.com/en/actions/secu
 
 API documentation is provided with Swagger and can be accessed at `/swagger/*any` when the server is running. If you wanna see it clearly, you may direct to
 `http://127.0.0.1:8080/swagger/index.html`
+
+if you deploy the service to minikube which follow our helm chart deployment, please direct to `http://ad-service-api.local/swagger/index.html`
 
 ## Dependencies
 

@@ -7,6 +7,7 @@ import (
 	"ad-service-api/internal/advertisement/handler"
 	"ad-service-api/internal/advertisement/repository"
 	"ad-service-api/internal/advertisement/service"
+	"ad-service-api/internal/middleware"
 	"ad-service-api/redis"
 
 	"github.com/gin-gonic/gin"
@@ -33,6 +34,8 @@ func NewRouter() *gin.Engine {
 	adHandler := handler.NewAdvertisementHandler(adService)
 
 	r := gin.Default()
+	r.Use(middleware.Logger())
+
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	adRoutes := r.Group("/api/v1")
