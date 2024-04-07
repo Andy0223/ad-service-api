@@ -1,11 +1,11 @@
 package handler
 
 import (
+	"ad-service-api/database"
 	"ad-service-api/internal/advertisement/service"
 	"ad-service-api/internal/models"
 	"ad-service-api/internal/validators"
-	"ad-service-api/utils"
-	"fmt"
+	"ad-service-api/redis"
 	"net/http"
 	"strconv"
 	"time"
@@ -87,31 +87,34 @@ func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Advertisement created successfully"})
 }
 
-// ListAdHandler lists all advertisements
-// @Summary List all advertisements
-// @Description Get a list of all advertisements
+// ListAdHandler lists all advertisements with optional query parameters
+// @Summary List all advertisements with optional query parameters
+// @Description Get a list of all advertisements with optional query parameters
 // @ID get-ads
 // @Produce  json
 // @Success 200 {array} models.Advertisement
 // @Router /api/v1/ads [get]
 func (h *AdvertisementHandler) ListAdHandler(c *gin.Context) {
-	queryParams, err := validators.ListAdParamsValidation(c.Request.URL.Query())
+	validQueryParams, err := validators.ListAdParamsValidation(c.Request.URL.Query())
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid query parameters: " + err.Error()})
 		return
 	}
 
 	// Generate a unique key for this set of query parameters
-	key := utils.GenerateRedisKey(queryParams)
+	key := redis.GenerateRedisKey(validQueryParams)
 
 	// Try to get the result from Redis first
 	result, _ := h.AdvertisementService.GetAdsByKey(c, key)
 
-	if result == nil {
+	// Check if the ad from redis is expired
+	isAdexpired := h.AdvertisementService.IsAdExpired(result)
+
+	if result == nil || isAdexpired {
 		// Create a filter, limit, and offset based on the query parameters
-		filter := utils.CreateFilter(queryParams)
-		limit, _ := strconv.Atoi(queryParams["limit"])
-		offset, _ := strconv.Atoi(queryParams["offset"])
+		filter := database.CreateFilter(validQueryParams)
+		limit, _ := strconv.Atoi(validQueryParams["limit"])
+		offset, _ := strconv.Atoi(validQueryParams["offset"])
 
 		// If the result is not in Redis, get it from the database
 		filteredAds, err := h.AdvertisementService.Fetch(c, filter, limit, offset)
@@ -121,7 +124,7 @@ func (h *AdvertisementHandler) ListAdHandler(c *gin.Context) {
 		}
 
 		// Store the result in Redis for future use
-		err = h.AdvertisementService.SetAdsByKey(c, key, filteredAds, 1000*time.Millisecond)
+		err = h.AdvertisementService.SetAdsByKey(c, key, filteredAds, time.Hour)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to cache advertisements: " + err.Error()})
 			return
@@ -131,7 +134,6 @@ func (h *AdvertisementHandler) ListAdHandler(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"ads": filteredAds})
 	} else {
 		// Return the result from Redis
-		fmt.Println("result", result)
 		c.JSON(http.StatusOK, gin.H{"ads": result})
 	}
 }
