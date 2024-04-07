@@ -125,6 +125,17 @@ func (suite *AdvertisementServiceSuite) TestAdvertisementService_DeleteAdsByPatt
 	suite.mockAdCountRepo.AssertExpectations(suite.T())
 }
 
+func (suite *AdvertisementServiceSuite) TestAdvertisementService_IsAdExpired() {
+	ads := []*models.Advertisement{
+		{Title: "Test Ad 1", EndAt: time.Now().Add(time.Hour)},
+		{Title: "Test Ad 2", EndAt: time.Now().Add(-time.Hour)},
+	}
+
+	isExpired := suite.s.IsAdExpired(ads)
+
+	assert.True(suite.T(), isExpired)
+}
+
 func TestAdvertisementServiceSuite(t *testing.T) {
 	suite.Run(t, new(AdvertisementServiceSuite))
 }
