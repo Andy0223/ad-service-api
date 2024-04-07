@@ -16,6 +16,25 @@ const docTemplate = `{
     "basePath": "{{.BasePath}}",
     "paths": {
         "/api/v1/ad": {
+            "get": {
+                "description": "Get a list of all advertisements with optional query parameters",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "List all advertisements with optional query parameters",
+                "operationId": "get-ads",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Advertisement"
+                            }
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Create new advertisement with the input payload",
                 "consumes": [
@@ -46,27 +65,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/api/v1/ads": {
-            "get": {
-                "description": "Get a list of all advertisements",
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "List all advertisements",
-                "operationId": "get-ads",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Advertisement"
-                            }
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -87,7 +85,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AgeRange": {
+        "models.Conditions": {
             "type": "object",
             "properties": {
                 "ageEnd": {
@@ -95,28 +93,20 @@ const docTemplate = `{
                 },
                 "ageStart": {
                     "type": "integer"
-                }
-            }
-        },
-        "models.Conditions": {
-            "type": "object",
-            "properties": {
-                "ageRange": {
-                    "$ref": "#/definitions/models.AgeRange"
                 },
-                "countries": {
+                "country": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "genders": {
+                "gender": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "platforms": {
+                "platform": {
                     "type": "array",
                     "items": {
                         "type": "string"

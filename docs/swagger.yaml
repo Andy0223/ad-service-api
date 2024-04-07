@@ -10,26 +10,21 @@ definitions:
       title:
         type: string
     type: object
-  models.AgeRange:
+  models.Conditions:
     properties:
       ageEnd:
         type: integer
       ageStart:
         type: integer
-    type: object
-  models.Conditions:
-    properties:
-      ageRange:
-        $ref: '#/definitions/models.AgeRange'
-      countries:
+      country:
         items:
           type: string
         type: array
-      genders:
+      gender:
         items:
           type: string
         type: array
-      platforms:
+      platform:
         items:
           type: string
         type: array
@@ -38,6 +33,19 @@ info:
   contact: {}
 paths:
   /api/v1/ad:
+    get:
+      description: Get a list of all advertisements with optional query parameters
+      operationId: get-ads
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Advertisement'
+            type: array
+      summary: List all advertisements with optional query parameters
     post:
       consumes:
       - application/json
@@ -58,18 +66,4 @@ paths:
           schema:
             $ref: '#/definitions/models.Advertisement'
       summary: Create new advertisement
-  /api/v1/ads:
-    get:
-      description: Get a list of all advertisements
-      operationId: get-ads
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.Advertisement'
-            type: array
-      summary: List all advertisements
 swagger: "2.0"
