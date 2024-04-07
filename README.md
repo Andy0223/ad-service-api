@@ -30,7 +30,6 @@ This project is a Go-based advertisement service API. It provides endpoints for 
 ## Project Structure
 
 - [`database/`](database/): Contains the MongoDB related functionality.
-    - [`mongo-init/`](/database/mongo-init/): initialize new user and database
 
 - [`docs/`](docs/): Contains the Swagger documentation for the API description.
 
@@ -49,6 +48,8 @@ This project is a Go-based advertisement service API. It provides endpoints for 
 - [`redis/`](redis/): Contains the Redis connection setup.
 
 - [`mock/`](mocks/): Contains the mock functions for service and repository
+
+- [`mongo-init/`](mongo-init/): initialize new user and database
 
 ## Setup and Running
 
