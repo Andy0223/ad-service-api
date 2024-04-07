@@ -98,7 +98,7 @@ This part is ready for the autoscaling and load balancing to handle substantial 
     --from-literal=database=0
     ```
 
-7. change to new docker image for `ad-service-api` tag in `values.yaml` by refering to deploy stage in Github Action
+7. change to new docker image tag for `ad-service-api` in `values.yaml` by refering to deploy stage in Github Action (e.g. build-01)
 
 8. Ready to release the helm chart and build resources
     ```sh
