@@ -2,13 +2,16 @@ package models
 
 import (
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Advertisement struct {
-	Title      string     `json:"title" bson:"title"`
-	StartAt    time.Time  `json:"startAt" bson:"startAt"`
-	EndAt      time.Time  `json:"endAt" bson:"endAt"`
-	Conditions Conditions `json:"conditions,omitempty" bson:"conditions,omitempty"`
+	ID         primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	Title      string             `json:"title" bson:"title"`
+	StartAt    time.Time          `json:"startAt" bson:"startAt"`
+	EndAt      time.Time          `json:"endAt" bson:"endAt"`
+	Conditions Conditions         `json:"conditions,omitempty" bson:"conditions,omitempty"`
 }
 
 type Conditions struct {

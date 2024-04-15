@@ -30,7 +30,7 @@ func TestAdvertisementRepository_Create(t *testing.T) {
 			// Populate the Advertisement struct
 		}
 
-		err := repo.Create(ctx, ad)
+		err := repo.InsertAd(ctx, ad)
 		assert.Nil(t, err)
 
 		count, err := mt.Coll.CountDocuments(ctx, bson.M{})

@@ -81,7 +81,7 @@ func ValidateOffset(offset string) error {
 	return nil
 }
 
-func CreateAdValueValidation(ad models.Advertisement) error {
+func CreateAndUpdateAdValueValidation(ad models.Advertisement) error {
 	// Validate startAt and endAt
 	if ad.StartAt.After(ad.EndAt) {
 		return errors.New("startAt must be before endAt")

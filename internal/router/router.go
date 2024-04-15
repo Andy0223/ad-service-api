@@ -42,6 +42,8 @@ func NewRouter() *gin.Engine {
 	{
 		adRoutes.POST("/ad", adHandler.CreateAdHandler)
 		adRoutes.GET("/ad", adHandler.ListAdHandler)
+		adRoutes.DELETE("/ad/:id", adHandler.DeleteAdHandler)
+		adRoutes.PUT("/ad/:id", adHandler.UpdateAdHandler)
 	}
 
 	return r

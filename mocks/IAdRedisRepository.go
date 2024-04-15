@@ -16,12 +16,12 @@ type MockAdRedisRepository struct {
 	mock.Mock
 }
 
-// DeleteAdsByPattern provides a mock function with given fields: ctx, pattern
-func (_m *MockAdRedisRepository) DeleteAdsByPattern(ctx context.Context, pattern string) error {
+// DeleteAdsCacheByPattern provides a mock function with given fields: ctx, pattern
+func (_m *MockAdRedisRepository) DeleteAdsCacheByPattern(ctx context.Context, pattern string) error {
 	ret := _m.Called(ctx, pattern)
 
 	if len(ret) == 0 {
-		panic("no return value specified for DeleteAdsByPattern")
+		panic("no return value specified for DeleteAdsCacheByPattern")
 	}
 
 	var r0 error

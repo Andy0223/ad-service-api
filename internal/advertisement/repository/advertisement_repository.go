@@ -7,15 +7,19 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 //go:generate mockery --name=IAdvertisementRepository --structname=MockAdvertisementRepository --output=mocks --dir=./internal/advertisement/repository --inpackage --with-expecter --testonly
 type IAdvertisementRepository interface {
-	Create(ctx context.Context, ad *models.Advertisement) error
+	InsertAd(ctx context.Context, ad *models.Advertisement) error
 	CountActive(ctx context.Context, now time.Time) (int, error)
 	Fetch(ctx context.Context, filter bson.M, limit, offset int) ([]*models.Advertisement, error)
+	DeleteAdById(ctx context.Context, id primitive.ObjectID) error
+	GetAdById(ctx context.Context, id primitive.ObjectID) (*models.Advertisement, error)
+	UpdateAdById(ctx context.Context, id primitive.ObjectID, ad *models.Advertisement) error
 }
 
 // AdvertisementRepositoryImpl implements the AdvertisementRepository interface.
@@ -31,7 +35,7 @@ func NewAdvertisementRepository(collection *mongo.Collection) IAdvertisementRepo
 }
 
 // Create inserts a new advertisement document into the MongoDB collection.
-func (r *AdvertisementRepository) Create(ctx context.Context, ad *models.Advertisement) error {
+func (r *AdvertisementRepository) InsertAd(ctx context.Context, ad *models.Advertisement) error {
 	_, err := r.collection.InsertOne(ctx, ad)
 	if err != nil {
 		return fmt.Errorf("failed to insert advertisement: %w", err)
@@ -69,4 +73,42 @@ func (r *AdvertisementRepository) Fetch(ctx context.Context, filter bson.M, limi
 	}
 
 	return ads, nil
+}
+
+// delete ads from the MongoDB collection based on the provided filter
+func (r *AdvertisementRepository) DeleteAdById(ctx context.Context, id primitive.ObjectID) error {
+	filter := bson.M{"_id": id}
+	_, err := r.collection.DeleteOne(ctx, filter)
+	if err != nil {
+		return fmt.Errorf("failed to delete advertisements: %w", err)
+	}
+	return nil
+}
+
+// GetAdById retrieves an advertisement from the MongoDB collection based on the provided ID.
+func (r *AdvertisementRepository) GetAdById(ctx context.Context, id primitive.ObjectID) (*models.Advertisement, error) {
+	filter := bson.M{"_id": id}
+
+	var ad models.Advertisement
+	if err := r.collection.FindOne(ctx, filter).Decode(&ad); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to find advertisement: %w", err)
+	}
+
+	return &ad, nil
+}
+
+// UpdateAdById updates an advertisement in the MongoDB collection based on the provided ID.
+func (r *AdvertisementRepository) UpdateAdById(ctx context.Context, id primitive.ObjectID, ad *models.Advertisement) error {
+	filter := bson.M{"_id": id}
+	update := bson.M{"$set": ad}
+
+	_, err := r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to update advertisement: %w", err)
+	}
+
+	return nil
 }

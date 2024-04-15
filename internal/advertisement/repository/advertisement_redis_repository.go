@@ -16,7 +16,7 @@ type IAdRedisRepository interface {
 	GetByDate(ctx context.Context, key string) (int, error)
 	GetAdsByKey(ctx context.Context, key string) ([]*models.Advertisement, error)
 	SetAdsByKey(ctx context.Context, key string, ads []*models.Advertisement, expiration time.Duration) error
-	DeleteAdsByPattern(ctx context.Context, pattern string) error
+	DeleteAdsCacheByPattern(ctx context.Context, pattern string) error
 }
 
 // AdRedisRepository is a struct that implements the IAdRedisRepository interface.
@@ -101,7 +101,7 @@ func (r *AdRedisRepository) SetAdsByKey(ctx context.Context, key string, ads []*
 }
 
 // DeleteAdsByPattern deletes all keys that start with the specified pattern from Redis.
-func (r *AdRedisRepository) DeleteAdsByPattern(ctx context.Context, pattern string) error {
+func (r *AdRedisRepository) DeleteAdsCacheByPattern(ctx context.Context, pattern string) error {
 	keys, err := r.rdb.Keys(ctx, pattern).Result()
 	if err != nil {
 		return fmt.Errorf("failed to get keys for pattern %s: %w", pattern, err)

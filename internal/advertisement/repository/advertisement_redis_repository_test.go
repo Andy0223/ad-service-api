@@ -75,7 +75,7 @@ func TestAdRedisRepository_DeleteAdsByPattern(t *testing.T) {
 	mock.ExpectKeys("testKey").SetVal([]string{"ads:testKey"})
 	mock.ExpectDel("ads:testKey").SetVal(1)
 
-	err := repo.DeleteAdsByPattern(context.Background(), "testKey")
+	err := repo.DeleteAdsCacheByPattern(context.Background(), "testKey")
 	assert.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

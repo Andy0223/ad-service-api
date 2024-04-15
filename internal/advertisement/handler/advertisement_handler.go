@@ -1,16 +1,14 @@
 package handler
 
 import (
-	"ad-service-api/database"
 	"ad-service-api/internal/advertisement/service"
 	"ad-service-api/internal/models"
 	"ad-service-api/internal/validators"
 	"ad-service-api/redis"
 	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AdvertisementHandler struct {
@@ -34,56 +32,15 @@ func NewAdvertisementHandler(adService service.IAdvertisementService) *Advertise
 // @Router /api/v1/ad [post]
 func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 	var ad models.Advertisement
-	now := time.Now()
-	today := now.Format("2006-01-02")
 	if err := c.ShouldBindJSON(&ad); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format: " + err.Error()})
 		return
 	}
-	// Validate the advertisement fields
-	if err := validators.CreateAdValueValidation(ad); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid advertisement data: " + err.Error()})
-		return
-	}
-
-	dailyAdCount, err := h.AdvertisementService.GetByDate(c, today)
+	err := h.AdvertisementService.CreateAd(c, &ad)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get daily ad count: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	// Ensure daily ad creation limit isn't exceeded
-	if dailyAdCount >= 3000 {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot create more ads today. Daily limit reached."})
-		return
-	}
-	// Ensure total active ads limit isn't exceeded
-	activeAdCount, err := h.AdvertisementService.CountActive(c, now)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get active ad count: " + err.Error()})
-		return
-	}
-	// Ensure total active ads limit isn't exceeded
-	if activeAdCount >= 1000 {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot create more ads. Active ads limit reached."})
-		return
-	}
-	// Ad passes all checks; proceed to add
-	if err := h.AdvertisementService.Create(c, &ad); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create advertisement: " + err.Error()})
-		return
-	}
-	// Increment the Redis counter for today's ads
-	if err := h.AdvertisementService.IncrByDate(c, today); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to increment ad count: " + err.Error()})
-		return
-	}
-
-	// Invalidate the cache for the list of ads
-	if err := h.AdvertisementService.DeleteAdsByPattern(c, "ads:*"); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to invalidate cache: " + err.Error()})
-		return
-	}
-
 	c.JSON(http.StatusCreated, gin.H{"message": "Advertisement created successfully"})
 }
 
@@ -95,7 +52,6 @@ func (h *AdvertisementHandler) CreateAdHandler(c *gin.Context) {
 // @Success 200 {array} models.Advertisement
 // @Router /api/v1/ad [get]
 func (h *AdvertisementHandler) ListAdHandler(c *gin.Context) {
-	now := time.Now()
 	// Validate the query parameters
 	validQueryParams, err := validators.ListAdParamsValidation(c.Request.URL.Query())
 	if err != nil {
@@ -106,36 +62,74 @@ func (h *AdvertisementHandler) ListAdHandler(c *gin.Context) {
 	// Generate a unique key for this set of query parameters
 	key := redis.GenerateRedisKey(validQueryParams)
 
-	// Try to get the result from Redis first
-	result, _ := h.AdvertisementService.GetAdsByKey(c, key)
-
-	// Check if the ad from redis is expired
-	isAdexpired := h.AdvertisementService.IsAdExpired(result, now)
-
-	if result == nil || isAdexpired {
-		// Create a filter, limit, and offset based on the query parameters
-		filter := database.CreateFilter(validQueryParams)
-		limit, _ := strconv.Atoi(validQueryParams["limit"])
-		offset, _ := strconv.Atoi(validQueryParams["offset"])
-
-		// If the result is not in Redis, get it from the database
-		filteredAds, err := h.AdvertisementService.Fetch(c, filter, limit, offset)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list advertisements: " + err.Error()})
-			return
-		}
-
-		// Store the result in Redis for future use
-		err = h.AdvertisementService.SetAdsByKey(c, key, filteredAds, time.Hour)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to cache advertisements: " + err.Error()})
-			return
-		}
-
-		// Return the result
-		c.JSON(http.StatusOK, gin.H{"ads": filteredAds})
-	} else {
-		// Return the result from Redis
-		c.JSON(http.StatusOK, gin.H{"ads": result})
+	// Try to get the result from the service
+	result, err := h.AdvertisementService.GetAds(c, key, validQueryParams)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list advertisements: " + err.Error()})
+		return
 	}
+
+	// Return the result
+	c.JSON(http.StatusOK, gin.H{"ads": result})
+}
+
+// delete the advertisement with given id
+// @Summary Delete the advertisement with given id
+// @Description Delete the advertisement with given id
+// @ID delete-ad
+// @Produce  json
+// @Param id path string true "Advertisement ID"
+// @Success 200 {string} string
+// @Router /api/v1/ad/{id} [delete]
+func (h *AdvertisementHandler) DeleteAdHandler(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid advertisement ID"})
+		return
+	}
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid advertisement ID"})
+		return
+	}
+	err = h.AdvertisementService.DeleteAdById(c, oid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete advertisement: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Advertisement deleted successfully"})
+}
+
+// update the advertisement with given id
+// @Summary Update the advertisement with given id
+// @Description Update the advertisement with given id
+// @ID update-ad
+// @Accept  json
+// @Produce  json
+// @Param id path string true "Advertisement ID"
+// @Param ad body models.Advertisement true "Update ad"
+// @Success 200 {object} models.Advertisement
+// @Router /api/v1/ad/{id} [put]
+func (h *AdvertisementHandler) UpdateAdHandler(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid advertisement ID"})
+		return
+	}
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid advertisement ID"})
+		return
+	}
+	var ad models.Advertisement
+	if err := c.ShouldBindJSON(&ad); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format: " + err.Error()})
+		return
+	}
+	err = h.AdvertisementService.UpdateAdById(c, oid, &ad)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update advertisement: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Advertisement updated successfully"})
 }

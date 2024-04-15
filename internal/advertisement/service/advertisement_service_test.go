@@ -34,7 +34,7 @@ func (suite *AdvertisementServiceSuite) TestAdvertisementService_Create() {
 
 	suite.mockAdRepo.On("Create", suite.ctx, ad).Return(nil)
 
-	err := suite.s.Create(suite.ctx, ad)
+	err := suite.s.CreateAd(suite.ctx, ad)
 
 	assert.NoError(suite.T(), err)
 	suite.mockAdRepo.AssertExpectations(suite.T())
@@ -114,12 +114,12 @@ func (suite *AdvertisementServiceSuite) TestAdvertisementService_SetAdsByKey() {
 	suite.mockAdRedisRepo.AssertExpectations(suite.T())
 }
 
-func (suite *AdvertisementServiceSuite) TestAdvertisementService_DeleteAdsByPattern() {
+func (suite *AdvertisementServiceSuite) TestAdvertisementService_DeleteAdsCacheByPattern() {
 	pattern := "test"
 
-	suite.mockAdRedisRepo.On("DeleteAdsByPattern", suite.ctx, pattern).Return(nil)
+	suite.mockAdRedisRepo.On("DeleteAdsCacheByPattern", suite.ctx, pattern).Return(nil)
 
-	err := suite.s.DeleteAdsByPattern(suite.ctx, pattern)
+	err := suite.s.DeleteAdsCacheByPattern(suite.ctx, pattern)
 
 	assert.NoError(suite.T(), err)
 	suite.mockAdRedisRepo.AssertExpectations(suite.T())
