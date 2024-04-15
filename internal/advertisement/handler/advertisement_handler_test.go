@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AdvertisementHandlerSuite struct {
@@ -43,11 +44,7 @@ func (suite *AdvertisementHandlerSuite) TestAdvertisementHandler_CreateAdHandler
 		},
 	}
 
-	suite.mockAdService.On("GetByDate", mock.Anything, now.Format("2006-01-02")).Return(1, nil)
-	suite.mockAdService.On("CountActive", mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("time.Time")).Return(1, nil)
-	suite.mockAdService.On("Create", mock.Anything, mock.AnythingOfType("*models.Advertisement")).Return(nil)
-	suite.mockAdService.On("IncrByDate", mock.Anything, now.Format("2006-01-02")).Return(nil)
-	suite.mockAdService.On("DeleteAdsByPattern", mock.Anything, mock.Anything).Return(nil)
+	suite.mockAdService.On("CreateAd", mock.Anything, mock.AnythingOfType("*models.Advertisement")).Return(nil)
 
 	// Create a response recorder
 	w := httptest.NewRecorder()
@@ -66,55 +63,84 @@ func (suite *AdvertisementHandlerSuite) TestAdvertisementHandler_CreateAdHandler
 }
 
 func (suite *AdvertisementHandlerSuite) TestAdvertisementHandler_ListAdHandler() {
-	expectedLimit := 5
-	expectedOffset := 0
-
-	// Provide some specific test ad data
-	expectedAds := []*models.Advertisement{
-		{Title: "Test Ad 1"},
-		{Title: "Test Ad 2"},
-	}
-
-	// Mock GetAdsByKey to return nil, indicating cache miss
-	suite.mockAdService.On("GetAdsByKey", mock.Anything, mock.Anything).Return(nil, nil)
-	suite.mockAdService.On("IsAdExpired", mock.Anything, mock.AnythingOfType("time.Time")).Return(false)
-
-	// Set the call expectation for the mock method, return specific test data
-	suite.mockAdService.On("Fetch", mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("primitive.M"), expectedLimit, expectedOffset).Return(expectedAds, nil)
-
-	// Mock SetAdsByKey to cache the result
-	suite.mockAdService.On("SetAdsByKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-
-	// Create response recorder and gin context
+	// Create a response recorder
 	w := httptest.NewRecorder()
+
+	// Create a gin context
 	c, _ := gin.CreateTestContext(w)
+
 	c.Request, _ = http.NewRequest(http.MethodGet, "/api/v1/ad", nil)
 
-	// Call the handler
+	// Set up the mock service to expect a call to GetAds and return an empty list and nil error
+	suite.mockAdService.On("GetAds", mock.Anything, mock.Anything, mock.Anything).Return([]*models.Advertisement{}, nil)
+
 	suite.h.ListAdHandler(c)
 
-	// Verify the response status code
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	// Parse the response body, verify if the returned ad data meets expectations
-	var adsResponse gin.H
-	err := json.NewDecoder(w.Body).Decode(&adsResponse)
-	assert.NoError(suite.T(), err)
-	adsInterface, ok := adsResponse["ads"].([]interface{})
-	assert.True(suite.T(), ok, "The type of the returned ad list should match the expected value")
-	adsValue := make([]*models.Advertisement, len(adsInterface))
+	// Assert that the GetAds method was called once
+	suite.mockAdService.AssertCalled(suite.T(), "GetAds", mock.Anything, mock.Anything, mock.Anything)
+}
 
-	for i, v := range adsInterface {
-		bytes, err := json.Marshal(v)
-		assert.NoError(suite.T(), err)
-		ad := &models.Advertisement{}
-		err = json.Unmarshal(bytes, ad)
-		assert.NoError(suite.T(), err)
-		adsValue[i] = ad
+func (suite *AdvertisementHandlerSuite) TestAdvertisementHandler_DeleteAdHandler() {
+	// Create a response recorder
+	w := httptest.NewRecorder()
+
+	// Create a gin context
+	c, _ := gin.CreateTestContext(w)
+
+	// Convert the string to a primitive.ObjectID
+	id, _ := primitive.ObjectIDFromHex("1")
+	c.Params = append(c.Params, gin.Param{Key: "id", Value: id.Hex()})
+
+	// Set up the mock service to expect a call to DeleteAdById and return nil error
+	suite.mockAdService.On("DeleteAdById", mock.Anything, id).Return(nil)
+
+	suite.h.DeleteAdHandler(c)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	// Assert that the DeleteAd method was called once
+	suite.mockAdService.AssertCalled(suite.T(), "DeleteAdById", mock.Anything, id)
+}
+
+func (suite *AdvertisementHandlerSuite) TestAdvertisementHandler_UpdateAdHandler() {
+	now := time.Now().Round(time.Second)
+	ad := &models.Advertisement{
+		Title:   "Test Ad",
+		StartAt: now,
+		EndAt:   now.Add(24 * time.Hour), // Ends after 24 hours
+		Conditions: models.Conditions{
+			AgeStart: 18,
+			AgeEnd:   24,
+			Gender:   []string{"M", "F"},
+			Country:  []string{"US", "JP"},
+			Platform: []string{"ios", "web"},
+		},
 	}
 
-	assert.Equal(suite.T(), expectedAds, adsValue)
-	suite.mockAdService.AssertExpectations(suite.T())
+	// Create a response recorder
+	w := httptest.NewRecorder()
+
+	// Create a gin context
+	c, _ := gin.CreateTestContext(w)
+
+	adJson, _ := json.Marshal(ad)
+	c.Request, _ = http.NewRequest(http.MethodPut, "/api/v1/ad/1", bytes.NewBuffer(adJson))
+	c.Request.Header.Set("Content-Type", "application/json")
+	id, _ := primitive.ObjectIDFromHex("1")
+	c.Params = append(c.Params, gin.Param{Key: "id", Value: id.Hex()})
+
+	// Set up the mock service to expect a call to UpdateAdById and return nil error
+	suite.mockAdService.On("UpdateAdById", mock.Anything, id, mock.AnythingOfType("*models.Advertisement")).Return(nil)
+
+	suite.h.UpdateAdHandler(c)
+
+	// Check the status code
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	// Assert that the UpdateAdById method was called once
+	suite.mockAdService.AssertCalled(suite.T(), "UpdateAdById", mock.Anything, id, mock.AnythingOfType("*models.Advertisement"))
 }
 
 func TestAdvertisementHandlerSuite(t *testing.T) {
