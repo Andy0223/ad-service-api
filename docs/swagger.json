@@ -54,6 +54,70 @@
                     }
                 }
             }
+        },
+        "/api/v1/ad/{id}": {
+            "put": {
+                "description": "Update the advertisement with given id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update the advertisement with given id",
+                "operationId": "update-ad",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Advertisement ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update ad",
+                        "name": "ad",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Advertisement"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Advertisement"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete the advertisement with given id",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete the advertisement with given id",
+                "operationId": "delete-ad",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Advertisement ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -64,6 +128,9 @@
                     "$ref": "#/definitions/models.Conditions"
                 },
                 "endAt": {
+                    "type": "string"
+                },
+                "id": {
                     "type": "string"
                 },
                 "startAt": {

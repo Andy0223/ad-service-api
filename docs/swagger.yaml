@@ -5,6 +5,8 @@ definitions:
         $ref: '#/definitions/models.Conditions'
       endAt:
         type: string
+      id:
+        type: string
       startAt:
         type: string
       title:
@@ -66,4 +68,47 @@ paths:
           schema:
             $ref: '#/definitions/models.Advertisement'
       summary: Create new advertisement
+  /api/v1/ad/{id}:
+    delete:
+      description: Delete the advertisement with given id
+      operationId: delete-ad
+      parameters:
+      - description: Advertisement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Delete the advertisement with given id
+    put:
+      consumes:
+      - application/json
+      description: Update the advertisement with given id
+      operationId: update-ad
+      parameters:
+      - description: Advertisement ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update ad
+        in: body
+        name: ad
+        required: true
+        schema:
+          $ref: '#/definitions/models.Advertisement'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Advertisement'
+      summary: Update the advertisement with given id
 swagger: "2.0"
